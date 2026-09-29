@@ -1,0 +1,111 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# =========================
+# IDE / OS
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# =========================
+# Backend runtime data
+# =========================
+backend/uploads/photos/*
+backend/uploads/datasets/*
+backend/uploads/reports/*
+backend/uploads/artifacts/*
+
+# Keep runtime directories in Git
+!backend/uploads/photos/.gitkeep
+!backend/uploads/datasets/.gitkeep
+!backend/uploads/reports/.gitkeep
+!backend/uploads/artifacts/.gitkeep
+
+# =========================
+# AI data / model files
+# =========================
+ai/data/raw/*
+ai/data/processed/*
+ai/models/*
+ai/data/manifests/*
+
+# Keep directory placeholders
+!ai/data/raw/.gitkeep
+!ai/data/processed/.gitkeep
+!ai/data/manifests/.gitkeep
+!ai/models/.gitkeep
+
+# Training / experiment outputs
+ai/training/runs/
+ai/training/checkpoints/
+ai/evaluation/results/
+
+# Model weights
+*.pt
+*.pth
+*.onnx
+*.ckpt
+*.h5
+
+# =========================
+# Geospatial generated data
+# =========================
+geospatial/outputs/*
+geospatial/analysis/outputs/*
+geospatial/validation/outputs/
+
+# Large geospatial datasets
+*.tif
+*.tiff
+*.jp2
+*.img
+*.nc
+
+# Keep placeholder
+!geospatial/outputs/.gitkeep
+
+# =========================
+# Large datasets / archives
+# =========================
+*.zip
+*.7z
+*.rar
+*.tar
+*.gz
+
+# =========================
+# Node / Frontend
+# =========================
+node_modules/
+dist/
+build/
+.next/
+out/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
