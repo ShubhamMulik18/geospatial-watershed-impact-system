@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "classes": [
+    {
+      "class_id": "check_dam",
+      "label": "Check Dam"
+    },
+    {
+      "class_id": "farm_pond",
+      "label": "Farm Pond"
+    },
+    {
+      "class_id": "percolation_tank",
+      "label": "Percolation Tank"
+    },
+    {
+      "class_id": "contour_trench",
+      "label": "Contour Trench"
+    },
+    {
+      "class_id": "plantation",
+      "label": "Plantation"
+    },
+    {
+      "class_id": "other_unknown",
+      "label": "Other/Unknown"
+    }
+  ]
+}
