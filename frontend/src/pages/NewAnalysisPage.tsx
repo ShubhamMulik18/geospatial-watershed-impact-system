@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import AnalysisMap from '../components/map/AnalysisMap'
 import PhotoMetadata, {
   type PhotoMetadataData,
 } from '../components/photo/PhotoMetadata'
@@ -116,6 +117,8 @@ function NewAnalysisPage() {
           </div>
         </div>
       )}
+
+      <AnalysisMap location={null} />
 
       <section className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 p-6">
         <div className="flex items-start gap-4">
