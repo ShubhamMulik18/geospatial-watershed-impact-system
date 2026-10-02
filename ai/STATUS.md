@@ -12,9 +12,11 @@ Completed
 - Added ignore rules in ai/.gitignore.
 - Updated the AI scope to four intervention classes plus Other/Unknown.
 - Removed plantation from the class configuration and dataset guide.
+- Created ai/training/validate_dataset.py.
+- Added four sample photographs and their private manifest records.
 
 Current Task
-Prepare photograph folders and a CSV dataset manifest.
+Collect more verified photographs from different physical sites.
 
 Important Files
 - ai/config/classes.json
@@ -23,9 +25,18 @@ Important Files
 - ai/STATUS.md
 
 Validation Results
-- JSON validation result: not yet recorded here.
-- PyTorch and torchvision versions: not yet recorded here.
-- Model training and evaluation results: not yet recorded.
+- Validation date: 2026-10-02.
+- Class configuration JSON: loaded and validated successfully.
+- Dataset validator: PASS — 4 records.
+- Readable images: 4/4.
+- Exact duplicate files detected: 0.
+- Each intervention class: 1 image and 1 recorded site.
+- Other/Unknown examples: 0.
+- Pillow version: 12.3.0.
+- SHA-256 fields in CSV: 4 blank, allowed during collection.
+- Train/validation/test splits: not assigned.
+- PyTorch and torchvision versions: not yet recorded.
+- Model training and evaluation: not started.
 
 Next Tasks
 1. Create photograph folders for the agreed classes.
