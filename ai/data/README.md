@@ -19,13 +19,12 @@ ai/config/classes.json
 | farm_pond | Farm Pond |
 | percolation_tank | Percolation Tank |
 | contour_trench | Contour Trench |
-| plantation | Plantation |
 | other_unknown | Other/Unknown |
 
 Use these exact class IDs consistently.
 
-The public class list does not mean all six classes have already
-been trained.
+There are four intervention classes and one Other/Unknown output.
+Listing a class here does not mean it has already been trained.
 
 3. Photograph Collection Rules
 

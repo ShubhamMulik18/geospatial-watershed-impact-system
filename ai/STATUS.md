@@ -10,6 +10,8 @@ Completed
 - Prepared class IDs and labels in ai/config/classes.json.
 - Prepared the photograph dataset guide in ai/data/README.md.
 - Added ignore rules in ai/.gitignore.
+- Updated the AI scope to four intervention classes plus Other/Unknown.
+- Removed plantation from the class configuration and dataset guide.
 
 Current Task
 Prepare photograph folders and a CSV dataset manifest.

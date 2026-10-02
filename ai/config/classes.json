@@ -18,10 +18,6 @@
       "label": "Contour Trench"
     },
     {
-      "class_id": "plantation",
-      "label": "Plantation"
-    },
-    {
       "class_id": "other_unknown",
       "label": "Other/Unknown"
     }
