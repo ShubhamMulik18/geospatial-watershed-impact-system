@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    container_name: watershed-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: watershed
+      POSTGRES_USER: watershed
+      POSTGRES_PASSWORD: watershed
+    ports:
+      - "5432:5432"
+    volumes:
+      - watershed_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U watershed -d watershed"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  watershed_postgres_data:
