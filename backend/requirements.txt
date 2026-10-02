@@ -8,3 +8,5 @@ psycopg[binary]>=3.2,<4
 geoalchemy2>=0.15,<1
 pydantic-settings>=2.5,<3
 httpx2>=2.0,<3
+Pillow>=11,<13
+python-multipart>=0.0.20,<1

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes.photos import router as photos_router
 from app.core.config import get_settings
 from app.core.constants import API_PREFIX, APP_NAME, HEALTH_PATH
 from app.core.error_handlers import app_error_handler
@@ -24,6 +25,11 @@ def create_app() -> FastAPI:
     )
 
     app.add_exception_handler(AppError, app_error_handler)
+
+    app.include_router(
+        photos_router,
+        prefix=API_PREFIX,
+    )
 
     @app.get(f"{API_PREFIX}{HEALTH_PATH}")
     async def health() -> dict[str, str]:

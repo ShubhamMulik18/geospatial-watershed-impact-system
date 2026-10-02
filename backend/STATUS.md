@@ -104,34 +104,48 @@ Verification:
 * Full test suite: `59 passed`
 * `git diff --check` → no whitespace errors.
 
-Phase 1 commit is pending final commit/push.
+Phase 1 commit: `c0f25d3` — pushed to `origin/backend`.
 
 ## Current Milestone
 
 ### Phase 2 — Photo Upload + EXIF
 
-**Status:** NOT STARTED
+**Status:** COMPLETED
 
 Expected scope:
 
-* Photo upload API.
-* File type and size validation.
-* Safe storage paths.
-* File hashing.
-* EXIF GPS extraction.
-* EXIF capture-date extraction.
-* EXIF status handling.
-* Photo persistence and retrieval foundation.
-* Tests for upload and EXIF behavior.
+Completed:
+
+* Added photo upload API at `POST /api/photos/upload`.
+* Added JPEG/PNG MIME and extension validation.
+* Added 10 MB photo size validation.
+* Added actual image-content validation using Pillow.
+* Added safe generated photo storage paths.
+* Added deterministic SHA-256 hashing.
+* Added EXIF GPS latitude/longitude extraction.
+* Added EXIF capture-date extraction.
+* Added EXIF status handling for available, partial, missing, and invalid metadata.
+* Added graceful warnings for unavailable EXIF fields.
+* Added photo persistence through the existing `photos` database model.
+* Added API, unit, and PostgreSQL/PostGIS integration tests.
+* Added runtime upload directories with Git-safe `.gitkeep` files.
+* Added Pillow and python-multipart dependencies.
+
+Verification:
+
+* Full test suite: `87 passed`
+* PostgreSQL/PostGIS photo persistence test: `1 passed`
+* `alembic check` → `No new upgrade operations detected.`
+* Runtime upload directories contain no persisted test files.
+* No Phase 2 migration was required.
 
 Phase 2 must preserve the Phase 0 API contracts and Phase 1 database foundation.
 
 ## Explicitly Not Implemented Yet
 
-The following remain outside the completed Phase 1 scope:
+The following remain outside the completed Phase 2 scope:
 
-* Photo upload processing.
-* EXIF extraction implementation.
+* Photo retrieval endpoints.
 * Real AI inference.
 * Dataset ingestion/processing adapters.
 * Analysis execution.
@@ -171,7 +185,7 @@ alembic check
 Expected current Phase 1 verification:
 
 ```text
-59 passed
+87 passed
 e4848f47f4f6 (head)
 No new upgrade operations detected.
 ```
