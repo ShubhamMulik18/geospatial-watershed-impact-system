@@ -5,6 +5,7 @@ import PhotoMetadata, {
 } from '../components/photo/PhotoMetadata'
 import PhotoPreview from '../components/photo/PhotoPreview'
 import PhotoUploader from '../components/photo/PhotoUploader'
+import PredictionCard from '../components/photo/PredictionCard'
 
 const unavailableMetadata: PhotoMetadataData = {
   latitude: null,
@@ -108,7 +109,11 @@ function NewAnalysisPage() {
             onRemove={handlePhotoRemove}
           />
 
-          <PhotoMetadata metadata={unavailableMetadata} />
+          <div className="space-y-6">
+            <PhotoMetadata metadata={unavailableMetadata} />
+
+            <PredictionCard prediction={null} />
+          </div>
         </div>
       )}
 
