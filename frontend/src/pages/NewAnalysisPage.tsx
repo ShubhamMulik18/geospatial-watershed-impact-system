@@ -3,6 +3,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { Link } from 'react-router-dom'
 
 import AnalysisControls, {
   type AnalysisMode,
@@ -125,7 +126,7 @@ function NewAnalysisPage() {
     setProcessingMessage(null)
 
     /*
-     * Phase 10 mock workflow:
+     * Phase 10/11 mock workflow:
      * this is not a real backend photo ID or extracted EXIF metadata.
      */
     setPhoto(
@@ -341,7 +342,9 @@ function NewAnalysisPage() {
       </section>
 
       {!selectedPhoto || !previewUrl ? (
-        <PhotoUploader onFileSelect={handlePhotoSelect} />
+        <PhotoUploader
+          onFileSelect={handlePhotoSelect}
+        />
       ) : (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
           <PhotoPreview
@@ -353,7 +356,8 @@ function NewAnalysisPage() {
           <div className="space-y-6">
             <PhotoMetadata
               metadata={
-                photoMetadata ?? unavailableMetadata
+                photoMetadata ??
+                unavailableMetadata
               }
             />
 
@@ -405,7 +409,9 @@ function NewAnalysisPage() {
         </div>
       </section>
 
-      <ValidationErrors errors={validationErrors} />
+      <ValidationErrors
+        errors={validationErrors}
+      />
 
       <ProcessingStatus
         status={processingStatus}
@@ -436,16 +442,43 @@ function NewAnalysisPage() {
             )}
           </div>
 
-          <button
-            type="button"
-            disabled={!canStartAnalysis}
-            onClick={handleStartAnalysis}
-            className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500"
-          >
-            {isSubmitting
-              ? 'Analysis Running...'
-              : 'Start Mock Analysis'}
-          </button>
+          <div className="flex shrink-0 flex-wrap items-center gap-3">
+            <button
+              type="button"
+              disabled={!canStartAnalysis}
+              onClick={handleStartAnalysis}
+              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-emerald-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500"
+            >
+              {isSubmitting
+                ? 'Analysis Running...'
+                : 'Start Mock Analysis'}
+            </button>
+
+            {analysisId &&
+              processingStatus === 'completed' && (
+                <Link
+                  to={`/analyses/${analysisId}`}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-6 py-3 text-sm font-semibold text-emerald-300 transition hover:border-emerald-400/50 hover:bg-emerald-500/15 hover:text-emerald-200"
+                >
+                  View Mock Results
+
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M5 12h14m-6-6 6 6-6 6"
+                    />
+                  </svg>
+                </Link>
+              )}
+          </div>
         </div>
       </section>
     </div>
