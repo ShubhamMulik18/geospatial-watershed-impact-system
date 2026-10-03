@@ -11,6 +11,11 @@ def test_default_settings() -> None:
         "http://localhost:5173",
     ]
 
+    assert settings.dataset_storage_root == "uploads/datasets"
+    assert settings.max_dataset_size_bytes == 1024 * 1024 * 1024
+    assert settings.max_processing_pixels == 2_000_000
+    assert settings.allowed_dataset_extensions == [".tif", ".tiff"]
+
 
 def test_settings_accept_environment_values() -> None:
     settings = Settings(

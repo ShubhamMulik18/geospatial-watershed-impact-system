@@ -11,6 +11,11 @@ class Settings(BaseSettings):
         "http://localhost:5173",
     ]
 
+    dataset_storage_root: str = "uploads/datasets"
+    max_dataset_size_bytes: int = 1024 * 1024 * 1024
+    max_processing_pixels: int = 2_000_000
+    allowed_dataset_extensions: list[str] = [".tif", ".tiff"]
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

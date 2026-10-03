@@ -10,3 +10,4 @@ pydantic-settings>=2.5,<3
 httpx2>=2.0,<3
 Pillow>=11,<13
 python-multipart>=0.0.20,<1
+rasterio>=1.5,<2
