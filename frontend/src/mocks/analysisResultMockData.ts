@@ -87,6 +87,8 @@ export const mockAnalysisResult: AnalysisResult = {
     },
   ],
 
+  layers: [],
+
   warnings: [
     'Mock result only — no satellite processing or backend watershed analysis was performed.',
     'Values shown on this page are demonstration data and must not be used for scientific interpretation.',

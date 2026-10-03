@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 
 import ComparisonChart from '../components/charts/ComparisonChart'
 import TimeSeriesChart from '../components/charts/TimeSeriesChart'
+import RasterResultMap from '../components/map/RasterResultMap'
 import ChangeSummary from '../components/results/ChangeSummary'
 import MetricCard from '../components/results/MetricCard'
 import ReportDownload from '../components/results/ReportDownload'
@@ -100,7 +101,8 @@ function AnalysisDetailsPage() {
 
         <p className="mt-3 max-w-3xl leading-7 text-slate-400">
           Review the result summary, scientific measurements, changes,
-          quality information, and provenance for this analysis.
+          quality information, provenance, charts, and geospatial result
+          layers for this analysis.
         </p>
 
         <div className="mt-5 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
@@ -323,17 +325,9 @@ function AnalysisDetailsPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/30 p-6">
-        <h2 className="text-lg font-semibold text-white">
-          Raster Result Layers Come Next
-        </h2>
-
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-          Chart visualizations are now available. Geographic raster result
-          layers will be introduced in the next dedicated visualization
-          phase.
-        </p>
-      </section>
+      <RasterResultMap
+        layers={mockAnalysisResult.layers}
+      />
 
       <div className="flex flex-wrap gap-3">
         <Link
