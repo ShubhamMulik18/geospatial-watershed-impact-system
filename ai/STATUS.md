@@ -19,9 +19,13 @@ Completed
 - Added image preprocessing in ai/inference/preprocess.py.
 - Implemented the CSV-based dataset loader in ai/training/dataset.py.
 - Successfully checked photograph loading and PyTorch batching.
+- Expanded the photograph collection to 8 images, with 2 images in each of the four intervention classes.
+- Implemented ai/training/hash_manifest.py with preview and CSV backup support.
+- Recorded and validated SHA-256 fingerprints for all 12 photographs.
+- Successfully loaded all 12 photographs through the dataset loader.
 
 Current Task
-Collect more verified photographs from different physical sites, especially percolation tanks.
+Collect more verified photographs from different physical sites, especially contour trenches, before assigning dataset splits.
 
 Important Files
 - ai/config/classes.json
@@ -30,29 +34,29 @@ Important Files
 - ai/STATUS.md
 
 Validation Results
-- Validation date: 2026-10-02.
+- Latest dataset validation date: 2026-10-03.
 - Class configuration JSON: loaded and validated successfully.
-- Dataset validator: PASS — 7 records.
-- Readable images: 7/7.
+- Dataset validator: PASS — 12 records.
+- Readable images: 12/12.
 - Exact duplicate files detected: 0.
-- Check Dam: 2 images from 2 recorded sites.
-- Farm Pond: 2 images from 2 recorded sites.
-- Percolation Tank: 1 image from 1 recorded site.
-- Contour Trench: 2 images from 2 recorded sites.
+- Check Dam: 3 images from 3 recorded sites.
+- Farm Pond: 3 images from 3 recorded sites.
+- Percolation Tank: 3 images from 3 recorded sites.
+- Contour Trench: 3 images from 2 recorded sites.
 - Other/Unknown examples: 0.
+- SHA-256 fields: 12 populated, 0 blank; all match their image files.
+- Train/validation/test splits: 12 unassigned.
+- Python version: 3.13.0.
 - Pillow version: 12.3.0.
-- SHA-256 fields in CSV: 7 blank, allowed during collection.
-- Train/validation/test splits: not assigned.
-- PyTorch and torchvision versions:- Python version: 3.13.0.
 - PyTorch version: 2.14.0.
 - torchvision version: 0.29.0.
 - PyTorch and torchvision imports: successful.
 - Mac GPU (MPS): available.
-- Model training and evaluation: not started.
-- Image preprocessing: PASS on 2 photographs.
+- Earlier standalone preprocessing check: PASS on 2 photographs.
 - Preprocessing output: shape (3, 224, 224), float32, CPU.
-- Dataset loader check (2026-10-03): PASS — 7/7 photographs loaded with labels from the manifest.
+- Dataset loader check (2026-10-03): PASS — 12/12 photographs loaded with labels from the manifest.
 - First batch: images (4, 3, 224, 224), labels (4,).
+- Model training and evaluation: not started.
 
 Next Tasks
 1. Create photograph folders for the agreed classes.
