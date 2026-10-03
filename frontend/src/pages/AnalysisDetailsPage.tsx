@@ -1,5 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 
+import ComparisonChart from '../components/charts/ComparisonChart'
+import TimeSeriesChart from '../components/charts/TimeSeriesChart'
 import ChangeSummary from '../components/results/ChangeSummary'
 import MetricCard from '../components/results/MetricCard'
 import ReportDownload from '../components/results/ReportDownload'
@@ -112,12 +114,14 @@ function AnalysisDetailsPage() {
 
       <ResultSummary
         predictedClass={
-          prediction?.predictedClass ??
-          mockAnalysisResult.prediction.predictedClass
+          prediction
+            ? prediction.predictedClass
+            : mockAnalysisResult.prediction.predictedClass
         }
         confidence={
-          prediction?.confidence ??
-          mockAnalysisResult.prediction.confidence
+          prediction
+            ? prediction.confidence
+            : mockAnalysisResult.prediction.confidence
         }
         datasetCount={selectedDatasets.length}
         indicatorCount={selectedIndicators.length}
@@ -150,6 +154,62 @@ function AnalysisDetailsPage() {
       <ResultsTable results={selectedDatasetResults} />
 
       <ChangeSummary changes={mockAnalysisResult.changes} />
+
+      <section>
+        <div className="mb-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400">
+            Visual Analysis
+          </p>
+
+          <h2 className="mt-1 text-xl font-semibold text-white">
+            Change Visualizations
+          </h2>
+
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+            Charts visualize the scientific measurements returned by the
+            analysis result. The frontend does not independently calculate
+            watershed measurements.
+          </p>
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-2">
+          {mockAnalysisResult.changes.map((change) => (
+            <ComparisonChart
+              key={change.id}
+              change={change}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <div className="mb-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400">
+            Time Series
+          </p>
+
+          <h2 className="mt-1 text-xl font-semibold text-white">
+            Multi-date Measurements
+          </h2>
+
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+            Measurements are shown across the currently selected dataset
+            dates.
+          </p>
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-2">
+          <TimeSeriesChart
+            results={selectedDatasetResults}
+            metric="ndvi"
+          />
+
+          <TimeSeriesChart
+            results={selectedDatasetResults}
+            metric="waterArea"
+          />
+        </div>
+      </section>
 
       <WarningsPanel
         warnings={mockAnalysisResult.warnings}
@@ -265,13 +325,13 @@ function AnalysisDetailsPage() {
 
       <section className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/30 p-6">
         <h2 className="text-lg font-semibold text-white">
-          Visualization Layers Come Next
+          Raster Result Layers Come Next
         </h2>
 
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-          Charts and raster result layers are intentionally excluded from
-          this phase. They will be introduced in the dedicated
-          visualization phases.
+          Chart visualizations are now available. Geographic raster result
+          layers will be introduced in the next dedicated visualization
+          phase.
         </p>
       </section>
 
