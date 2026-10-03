@@ -25,6 +25,7 @@ Completed
 - Successfully loaded all 12 photographs through the dataset loader.
 - Added ai/inference/model.py as the shared MobileNetV2 model structure.
 - Added check_dam_0004 and farm_pond_0004 with source and licence details.
+- Prepared ai/config/train.yaml with initial training settings.
 
 Current Task
 Collect more verified photographs from different physical sites, especially contour trenches, before assigning dataset splits.
