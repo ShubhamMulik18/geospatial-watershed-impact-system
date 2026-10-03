@@ -1,10 +1,17 @@
 import { Link, useParams } from 'react-router-dom'
 
+import ChangeSummary from '../components/results/ChangeSummary'
+import MetricCard from '../components/results/MetricCard'
+import ReportDownload from '../components/results/ReportDownload'
+import ResultsTable from '../components/results/ResultsTable'
+import ResultSummary from '../components/results/ResultSummary'
+import WarningsPanel from '../components/results/WarningsPanel'
 import { useAnalysis } from '../context/useAnalysis'
 import {
   mockDatasets,
   mockIndicators,
 } from '../mocks/analysisMockData'
+import { mockAnalysisResult } from '../mocks/analysisResultMockData'
 
 function AnalysisDetailsPage() {
   const { analysisId: routeAnalysisId } = useParams()
@@ -12,7 +19,6 @@ function AnalysisDetailsPage() {
   const {
     analysisId,
     prediction,
-    confirmedPolygon,
     datasetIds,
     indicators,
   } = useAnalysis()
@@ -28,6 +34,11 @@ function AnalysisDetailsPage() {
   const selectedIndicators = mockIndicators.filter((indicator) =>
     indicators.includes(indicator.id),
   )
+
+  const selectedDatasetResults =
+    mockAnalysisResult.datasetResults.filter((result) =>
+      datasetIds.includes(result.datasetId),
+    )
 
   if (!isCurrentMockAnalysis) {
     return (
@@ -82,237 +93,185 @@ function AnalysisDetailsPage() {
         </div>
 
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-          Watershed Analysis Summary
+          Watershed Results Dashboard
         </h1>
 
         <p className="mt-3 max-w-3xl leading-7 text-slate-400">
-          Review the configuration and mock outputs produced by the
-          frontend demonstration workflow.
+          Review the result summary, scientific measurements, changes,
+          quality information, and provenance for this analysis.
         </p>
 
         <div className="mt-5 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
           <p className="text-sm leading-6 text-amber-200/80">
-            This page contains frontend mock data only. No real watershed
-            processing, satellite analysis, or backend computation has
-            been performed.
+            This dashboard currently uses clearly marked frontend mock
+            values. No real watershed processing, satellite analysis, or
+            backend scientific computation has been performed.
           </p>
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Status
-          </p>
+      <ResultSummary
+        predictedClass={
+          prediction?.predictedClass ??
+          mockAnalysisResult.prediction.predictedClass
+        }
+        confidence={
+          prediction?.confidence ??
+          mockAnalysisResult.prediction.confidence
+        }
+        datasetCount={selectedDatasets.length}
+        indicatorCount={selectedIndicators.length}
+      />
 
-          <p className="mt-2 text-lg font-semibold text-emerald-400">
-            Completed
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Datasets
-          </p>
-
-          <p className="mt-2 text-lg font-semibold text-white">
-            {selectedDatasets.length}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Indicators
-          </p>
-
-          <p className="mt-2 text-lg font-semibold text-white">
-            {selectedIndicators.length}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Study Area
-          </p>
-
-          <p className="mt-2 text-lg font-semibold text-white">
-            {confirmedPolygon ? 'Confirmed' : 'Unavailable'}
-          </p>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400">
-          Analysis Identifier
-        </p>
-
-        <p className="mt-3 break-all font-mono text-lg font-semibold text-white">
-          {routeAnalysisId ?? 'Unavailable'}
-        </p>
-      </section>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+      <section>
+        <div className="mb-5">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400">
-            AI Prediction
-          </p>
-
-          <h2 className="mt-2 text-xl font-semibold text-white">
-            {prediction?.predictedClass ?? 'Unavailable'}
-          </h2>
-
-          {prediction ? (
-            <div className="mt-5 space-y-3 text-sm">
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-slate-500">
-                  Confidence
-                </span>
-
-                <span className="font-medium text-slate-200">
-                  {prediction.confidence !== null
-                   ? `${(prediction.confidence * 100).toFixed(0)}%`
-                  : 'Unavailable'}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-slate-500">
-                  Verification
-                </span>
-
-                <span className="font-medium text-slate-200">
-                  {prediction.verificationRequired
-                    ? 'Required'
-                    : 'Not required'}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-slate-500">
-                  Model
-                </span>
-
-                <span className="font-mono text-xs text-slate-300">
-                  {prediction.modelVersion}
-                </span>
-              </div>
-            </div>
-          ) : (
-            <p className="mt-4 text-sm text-slate-500">
-              Prediction information is unavailable.
-            </p>
-          )}
-        </section>
-
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400">
-            Study Area
-          </p>
-
-          <h2 className="mt-2 text-xl font-semibold text-white">
-            Confirmed Polygon
-          </h2>
-
-          <p className="mt-3 text-sm leading-6 text-slate-400">
-            {confirmedPolygon
-              ? `${confirmedPolygon.coordinates.length} polygon vertices are stored in the current analysis session.`
-              : 'Confirmed study-area geometry is unavailable.'}
-          </p>
-
-          <p className="mt-4 text-xs leading-5 text-slate-500">
-            Detailed spatial result layers will be introduced in later
-            frontend phases.
-          </p>
-        </section>
-      </div>
-
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400">
-            Selected Datasets
+            Key Metrics
           </p>
 
           <h2 className="mt-1 text-xl font-semibold text-white">
-            Analysis Timeline
+            Watershed Measurements
           </h2>
         </div>
 
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {selectedDatasets.length > 0 ? (
-            selectedDatasets.map((dataset) => (
-              <article
-                key={dataset.id}
-                className="rounded-xl border border-slate-800 bg-slate-950/50 p-5"
-              >
-                <p className="font-semibold text-white">
-                  {dataset.displayName}
-                </p>
-
-                <div className="mt-4 space-y-2 text-sm">
-                  <p className="text-slate-400">
-                    Year:{' '}
-                    <span className="text-slate-200">
-                      {dataset.year}
-                    </span>
-                  </p>
-
-                  <p className="text-slate-400">
-                    Acquisition:{' '}
-                    <span className="text-slate-200">
-                      {dataset.acquisitionDate ?? 'Unavailable'}
-                    </span>
-                  </p>
-
-                  <p className="text-slate-400">
-                    Resolution:{' '}
-                    <span className="text-slate-200">
-                      {dataset.resolution ?? 'Unavailable'}
-                    </span>
-                  </p>
-                </div>
-              </article>
-            ))
-          ) : (
-            <p className="text-sm text-slate-500">
-              Dataset information is unavailable.
-            </p>
-          )}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {mockAnalysisResult.metrics.map((metric) => (
+            <MetricCard
+              key={metric.id}
+              label={metric.label}
+              value={metric.value}
+              unit={metric.unit}
+              description={metric.description}
+            />
+          ))}
         </div>
       </section>
 
+      <ResultsTable results={selectedDatasetResults} />
+
+      <ChangeSummary changes={mockAnalysisResult.changes} />
+
+      <WarningsPanel
+        warnings={mockAnalysisResult.warnings}
+        quality={mockAnalysisResult.quality}
+      />
+
       <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400">
-          Selected Indicators
+          Provenance
         </p>
 
-        <div className="mt-4 flex flex-wrap gap-3">
-          {selectedIndicators.length > 0 ? (
-            selectedIndicators.map((indicator) => (
-              <span
-                key={indicator.id}
-                className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-300"
-              >
-                {indicator.displayName}
-              </span>
-            ))
-          ) : (
-            <p className="text-sm text-slate-500">
-              Indicator information is unavailable.
+        <h2 className="mt-1 text-xl font-semibold text-white">
+          Result Source
+        </h2>
+
+        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+          <div>
+            <p className="text-xs uppercase tracking-wider text-slate-500">
+              Source
             </p>
-          )}
+
+            <p className="mt-2 text-sm font-medium text-slate-200">
+              {mockAnalysisResult.provenance.source ?? 'Unavailable'}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs uppercase tracking-wider text-slate-500">
+              Model Version
+            </p>
+
+            <p className="mt-2 font-mono text-sm text-slate-200">
+              {prediction?.modelVersion ??
+                mockAnalysisResult.provenance.modelVersion ??
+                'Unavailable'}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs uppercase tracking-wider text-slate-500">
+              Generated At
+            </p>
+
+            <p className="mt-2 text-sm font-medium text-slate-200">
+              {mockAnalysisResult.provenance.generatedAt ?? 'Unavailable'}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <ReportDownload />
+
+      <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400">
+          Analysis Configuration
+        </p>
+
+        <div className="mt-5 grid gap-6 lg:grid-cols-2">
+          <div>
+            <h2 className="font-semibold text-white">
+              Selected Datasets
+            </h2>
+
+            <div className="mt-3 space-y-2">
+              {selectedDatasets.length > 0 ? (
+                selectedDatasets.map((dataset) => (
+                  <div
+                    key={dataset.id}
+                    className="rounded-lg border border-slate-800 bg-slate-950/40 px-4 py-3"
+                  >
+                    <p className="text-sm font-medium text-slate-200">
+                      {dataset.displayName}
+                    </p>
+
+                    <p className="mt-1 text-xs text-slate-500">
+                      {dataset.year} ·{' '}
+                      {dataset.acquisitionDate ?? 'Unavailable'}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-500">
+                  Dataset information is unavailable.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <h2 className="font-semibold text-white">
+              Selected Indicators
+            </h2>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              {selectedIndicators.length > 0 ? (
+                selectedIndicators.map((indicator) => (
+                  <span
+                    key={indicator.id}
+                    className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-300"
+                  >
+                    {indicator.displayName}
+                  </span>
+                ))
+              ) : (
+                <p className="text-sm text-slate-500">
+                  Indicator information is unavailable.
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       </section>
 
       <section className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/30 p-6">
         <h2 className="text-lg font-semibold text-white">
-          Detailed Results Coming Next
+          Visualization Layers Come Next
         </h2>
 
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-          Detailed watershed metrics, change charts, raster result
-          layers, warnings, and report controls are intentionally not
-          included in this mock summary. They will be implemented in
-          the dedicated results phases.
+          Charts and raster result layers are intentionally excluded from
+          this phase. They will be introduced in the dedicated
+          visualization phases.
         </p>
       </section>
 
