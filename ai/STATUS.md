@@ -24,6 +24,7 @@ Completed
 - Recorded and validated SHA-256 fingerprints for all 12 photographs.
 - Successfully loaded all 12 photographs through the dataset loader.
 - Added ai/inference/model.py as the shared MobileNetV2 model structure.
+- Added check_dam_0004 and farm_pond_0004 with source and licence details.
 
 Current Task
 Collect more verified photographs from different physical sites, especially contour trenches, before assigning dataset splits.
@@ -37,16 +38,16 @@ Important Files
 Validation Results
 - Latest dataset validation date: 2026-10-03.
 - Class configuration JSON: loaded and validated successfully.
-- Dataset validator: PASS — 13 records.
-- Readable images: 13/13.
+- Dataset validator: PASS — 15 records.
+- Readable images: 15/15.
 - Exact duplicate files detected: 0.
-- Check Dam: 3 images from 3 recorded sites.
-- Farm Pond: 3 images from 3 recorded sites.
+- Check Dam: 4 images from 4 recorded sites.
+- Farm Pond: 4 images from 4 recorded sites.
 - Percolation Tank: 3 images from 3 recorded sites.
 - Contour Trench: 4 images from 3 recorded sites.
 - Other/Unknown examples: 0.
 - SHA-256 fields: 13 populated, 0 blank; all match their image files.
-- Train/validation/test splits: 13 unassigned.
+- Train/validation/test splits: 15 unassigned.
 - Python version: 3.13.0.
 - Pillow version: 12.3.0.
 - PyTorch version: 2.14.0.
@@ -55,7 +56,7 @@ Validation Results
 - Mac GPU (MPS): available.
 - Earlier standalone preprocessing check: PASS on 2 photographs.
 - Preprocessing output: shape (3, 224, 224), float32, CPU.
-- Dataset loader check (2026-10-03): PASS — 13/13 photographs loaded with labels from the manifest.
+- Dataset loader check (2026-10-03): PASS — 15/15 photographs loaded with labels from the manifest.
 - First batch: images (4, 3, 224, 224), labels (4,).
 - Model training and evaluation: not started.
 - Model structure check (2026-10-03): PASS on CPU using random weights.
