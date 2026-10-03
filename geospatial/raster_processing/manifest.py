@@ -1,24 +1,29 @@
 from dataclasses import dataclass, asdict
-from typing import Optional
+from typing import Optional, Any
 
 
 @dataclass
 class DatasetManifest:
     """
-    Metadata describing a satellite raster dataset.
+    Metadata describing a verified satellite raster dataset.
     """
 
     acquisition_date: str
     sensor: str
     product: str
 
-    bands: dict
+    # Semantic band names mapped to one-based raster band indexes.
+    # Example: {"red": 4, "nir": 5, "green": 3, "swir": 6}
+    bands: dict[str, int]
 
-    scale: float = 1.0
-    offset: float = 0.0
+    # Per-band reflectance scaling.
+    # Example: {"red": {"scale": 0.0001, "offset": 0.0}, ...}
+    band_scaling: dict[str, dict[str, float]]
 
     nodata: Optional[float] = None
-    quality_mask: Optional[str] = None
+
+    # Reference/path plus decoding information for the quality mask.
+    quality_mask: Optional[dict[str, Any]] = None
 
     land_cover_legend: Optional[dict] = None
 
