@@ -1,6 +1,7 @@
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { MapContainer, TileLayer } from 'react-leaflet'
 
+import { useAnalysis } from '../../context/useAnalysis'
 import type { GeoJsonPosition } from '../../utils/coordinates'
 import { geoJsonToLeaflet } from '../../utils/coordinates'
 import { validatePolygonRing } from '../../utils/polygonValidation'
@@ -19,11 +20,12 @@ type AnalysisMapProps = {
 const DEFAULT_CENTER: [number, number] = [20.5937, 78.9629]
 
 function AnalysisMap({ location = null }: AnalysisMapProps) {
-  const [studyArea, setStudyArea] =
-    useState<StudyAreaPolygon | null>(null)
-
-  const [isStudyAreaConfirmed, setIsStudyAreaConfirmed] =
-    useState(false)
+  const {
+    draftPolygon,
+    confirmedPolygon,
+    setDraftPolygon,
+    confirmPolygon,
+  } = useAnalysis()
 
   const markerPosition = location
     ? geoJsonToLeaflet(location)
@@ -34,31 +36,38 @@ function AnalysisMap({ location = null }: AnalysisMapProps) {
 
   const handlePolygonChange = useCallback(
     (polygon: StudyAreaPolygon | null) => {
-      setStudyArea(polygon)
-
-      // Any geometry change makes the previous confirmation stale.
-      setIsStudyAreaConfirmed(false)
+      setDraftPolygon(polygon)
     },
-    [],
+    [setDraftPolygon],
   )
 
-  const vertexCount = studyArea
-    ? Math.max(studyArea.coordinates[0].length - 1, 0)
+  const vertexCount = draftPolygon
+    ? Math.max(
+        draftPolygon.coordinates[0].length - 1,
+        0,
+      )
     : 0
 
-  const validation = studyArea
-    ? validatePolygonRing(studyArea.coordinates[0])
+  const validation = draftPolygon
+    ? validatePolygonRing(
+        draftPolygon.coordinates[0],
+      )
     : null
 
   const isStudyAreaValid =
-    studyArea !== null && validation?.isValid === true
+    draftPolygon !== null &&
+    validation?.isValid === true
+
+  const isStudyAreaConfirmed =
+    draftPolygon !== null &&
+    confirmedPolygon !== null
 
   function handleConfirmStudyArea() {
-    if (!isStudyAreaValid) {
+    if (!draftPolygon || !isStudyAreaValid) {
       return
     }
 
-    setIsStudyAreaConfirmed(true)
+    confirmPolygon(draftPolygon)
   }
 
   return (
@@ -81,13 +90,13 @@ function AnalysisMap({ location = null }: AnalysisMapProps) {
               : 'Location unavailable'}
           </span>
 
-          {studyArea && !isStudyAreaValid && (
+          {draftPolygon && !isStudyAreaValid && (
             <span className="rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-medium text-red-300">
               Invalid study area
             </span>
           )}
 
-          {studyArea &&
+          {draftPolygon &&
             isStudyAreaValid &&
             !isStudyAreaConfirmed && (
               <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-300">
@@ -95,7 +104,7 @@ function AnalysisMap({ location = null }: AnalysisMapProps) {
               </span>
             )}
 
-          {studyArea &&
+          {draftPolygon &&
             isStudyAreaValid &&
             isStudyAreaConfirmed && (
               <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
@@ -122,9 +131,12 @@ function AnalysisMap({ location = null }: AnalysisMapProps) {
             zoom={mapZoom}
           />
 
-          <MapLegend hasLocation={Boolean(location)} />
+          <MapLegend
+            hasLocation={Boolean(location)}
+          />
 
           <PolygonEditor
+            polygon={draftPolygon}
             onPolygonChange={handlePolygonChange}
           />
 
@@ -138,7 +150,7 @@ function AnalysisMap({ location = null }: AnalysisMapProps) {
       </div>
 
       <StudyAreaStatus
-        hasStudyArea={studyArea !== null}
+        hasStudyArea={draftPolygon !== null}
         vertexCount={vertexCount}
         validation={validation}
         isConfirmed={isStudyAreaConfirmed}

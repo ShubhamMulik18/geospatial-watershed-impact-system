@@ -1,14 +1,17 @@
-import { useState } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 
 import AnalysisControls, {
   type AnalysisMode,
-  type AnalysisModeOption,
 } from '../components/analysis/AnalysisControls'
 import DatasetSelector from '../components/analysis/DatasetSelector'
-import IndicatorSelector, {
-  type IndicatorOption,
-} from '../components/analysis/IndicatorSelector'
-import ProcessingStatus from '../components/analysis/ProcessingStatus'
+import IndicatorSelector from '../components/analysis/IndicatorSelector'
+import ProcessingStatus, {
+  type ProcessingState,
+} from '../components/analysis/ProcessingStatus'
 import ValidationErrors from '../components/analysis/ValidationErrors'
 import AnalysisMap from '../components/map/AnalysisMap'
 import PhotoMetadata, {
@@ -17,7 +20,13 @@ import PhotoMetadata, {
 import PhotoPreview from '../components/photo/PhotoPreview'
 import PhotoUploader from '../components/photo/PhotoUploader'
 import PredictionCard from '../components/photo/PredictionCard'
-import type { DatasetMetadata } from '../types/dataset'
+import { useAnalysis } from '../context/useAnalysis'
+import {
+  mockAnalysisModes,
+  mockDatasets,
+  mockIndicators,
+  mockPrediction,
+} from '../mocks/analysisMockData'
 
 const unavailableMetadata: PhotoMetadataData = {
   latitude: null,
@@ -27,55 +36,165 @@ const unavailableMetadata: PhotoMetadataData = {
   cameraModel: null,
 }
 
-// The real dataset catalogue will come from the backend.
-// Keep this empty rather than inventing datasets.
-const availableDatasets: DatasetMetadata[] = []
-
-// Indicator support will be derived from the selected datasets
-// and backend compatibility information.
-const availableIndicators: IndicatorOption[] = []
-
-// The backend/workflow will determine which modes are available.
-const availableAnalysisModes: AnalysisModeOption[] = []
+const mockPhotoMetadata: PhotoMetadataData = {
+  latitude: null,
+  longitude: null,
+  capturedAt: null,
+  cameraMake: null,
+  cameraModel: null,
+}
 
 function NewAnalysisPage() {
-  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const {
+    photoMetadata,
+    prediction,
+    confirmedPolygon,
+    datasetIds,
+    indicators,
+    analysisId,
+    isSubmitting,
 
-  const [selectedDatasetIds, setSelectedDatasetIds] = useState<string[]>([])
-  const [selectedIndicatorIds, setSelectedIndicatorIds] = useState<string[]>([])
+    setPhoto,
+    setPrediction,
+    setDatasetIds,
+    setIndicators,
+    setAnalysisId,
+
+    markValidationFresh,
+    markResultsFresh,
+
+    beginPhotoRequest,
+    isCurrentPhotoRequest,
+
+    beginSubmission,
+    finishSubmission,
+
+    resetAnalysis,
+  } = useAnalysis()
+
+  const [selectedPhoto, setSelectedPhoto] =
+    useState<File | null>(null)
+
+  const [previewUrl, setPreviewUrl] =
+    useState<string | null>(null)
+
   const [selectedAnalysisMode, setSelectedAnalysisMode] =
     useState<AnalysisMode | null>(null)
 
-  function handlePhotoSelect(file: File) {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl)
+  const [isPredictionLoading, setIsPredictionLoading] =
+    useState(false)
+
+  const [processingStatus, setProcessingStatus] =
+    useState<ProcessingState>('idle')
+
+  const [processingMessage, setProcessingMessage] =
+    useState<string | null>(null)
+
+  const previewUrlRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current)
+      }
+    }
+  }, [])
+
+  async function wait(milliseconds: number) {
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, milliseconds)
+    })
+  }
+
+  async function handlePhotoSelect(file: File) {
+    const requestId = beginPhotoRequest()
+
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current)
     }
 
     const objectUrl = URL.createObjectURL(file)
 
+    previewUrlRef.current = objectUrl
+
     setSelectedPhoto(file)
     setPreviewUrl(objectUrl)
+
+    setSelectedAnalysisMode(null)
+    setProcessingStatus('idle')
+    setProcessingMessage(null)
+
+    /*
+     * Phase 10 mock workflow:
+     * this is not a real backend photo ID or extracted EXIF metadata.
+     */
+    setPhoto(
+      `mock-photo-${requestId}`,
+      mockPhotoMetadata,
+    )
+
+    setIsPredictionLoading(true)
+
+    await wait(700)
+
+    if (!isCurrentPhotoRequest(requestId)) {
+      return
+    }
+
+    setPrediction(
+      `mock-prediction-${requestId}`,
+      mockPrediction,
+    )
+
+    setIsPredictionLoading(false)
   }
 
   function handlePhotoRemove() {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl)
+    /*
+     * Starting a new photo request invalidates any late response
+     * belonging to the photo being removed.
+     */
+    beginPhotoRequest()
+
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current)
     }
+
+    previewUrlRef.current = null
 
     setSelectedPhoto(null)
     setPreviewUrl(null)
+
+    setSelectedAnalysisMode(null)
+    setIsPredictionLoading(false)
+
+    setProcessingStatus('idle')
+    setProcessingMessage(null)
+
+    resetAnalysis()
   }
 
   const validationErrors: string[] = []
 
-  if (selectedDatasetIds.length < 2) {
+  if (!selectedPhoto) {
+    validationErrors.push(
+      'Upload a field photo to begin the mock analysis workflow.',
+    )
+  }
+
+  if (!confirmedPolygon) {
+    validationErrors.push(
+      'Draw and confirm a valid study area polygon.',
+    )
+  }
+
+  if (datasetIds.length < 2) {
     validationErrors.push(
       'Select at least two distinct compatible datasets.',
     )
   }
 
-  if (selectedIndicatorIds.length === 0) {
+  if (indicators.length === 0) {
     validationErrors.push(
       'Select at least one supported analysis indicator.',
     )
@@ -87,12 +206,78 @@ function NewAnalysisPage() {
     )
   }
 
+  const canStartAnalysis =
+    validationErrors.length === 0 &&
+    !isSubmitting
+
+  async function handleStartAnalysis() {
+    if (!canStartAnalysis) {
+      return
+    }
+
+    const requestId = beginSubmission()
+
+    if (requestId === null) {
+      return
+    }
+
+    setProcessingStatus('created')
+    setProcessingMessage(
+      'Mock analysis request created.',
+    )
+
+    await wait(600)
+
+    setProcessingStatus('validating')
+    setProcessingMessage(
+      'Validating the mock analysis configuration.',
+    )
+
+    await wait(700)
+
+    setProcessingStatus('processing')
+    setProcessingMessage(
+      'Running the mock watershed analysis.',
+    )
+
+    await wait(1200)
+
+    /*
+     * finishSubmission rejects a response belonging to an
+     * invalidated or older analysis request.
+     */
+    const isCurrentRequest =
+      finishSubmission(requestId)
+
+    if (!isCurrentRequest) {
+      return
+    }
+
+    setAnalysisId(
+      `mock-analysis-${requestId}`,
+    )
+
+    markValidationFresh()
+    markResultsFresh()
+
+    setProcessingStatus('completed')
+    setProcessingMessage(
+      'Mock analysis completed successfully. No real backend processing was performed.',
+    )
+  }
+
   return (
     <div className="space-y-8">
       <section>
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-400">
-          Analysis Workspace
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-400">
+            Analysis Workspace
+          </p>
+
+          <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-300">
+            Mock Mode
+          </span>
+        </div>
 
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
           New Watershed Analysis
@@ -103,6 +288,14 @@ function NewAnalysisPage() {
           a confirmed study area, compatible geospatial datasets, and
           supported analysis indicators.
         </p>
+
+        <div className="mt-5 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+          <p className="text-sm leading-6 text-amber-200/80">
+            Frontend demonstration mode is active. Dataset records,
+            AI prediction, identifiers, and processing states shown in
+            this workflow are mock data and are not backend results.
+          </p>
+        </div>
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -136,12 +329,12 @@ function NewAnalysisPage() {
           </p>
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
             Step 4
           </p>
 
-          <p className="mt-1 text-sm font-medium text-slate-500">
+          <p className="mt-1 text-sm font-semibold text-emerald-200">
             Analysis
           </p>
         </div>
@@ -158,9 +351,16 @@ function NewAnalysisPage() {
           />
 
           <div className="space-y-6">
-            <PhotoMetadata metadata={unavailableMetadata} />
+            <PhotoMetadata
+              metadata={
+                photoMetadata ?? unavailableMetadata
+              }
+            />
 
-            <PredictionCard prediction={null} />
+            <PredictionCard
+              prediction={prediction}
+              isLoading={isPredictionLoading}
+            />
           </div>
         </div>
       )}
@@ -178,28 +378,27 @@ function NewAnalysisPage() {
           </h2>
 
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-            Select compatible datasets, supported indicators, and an
-            available comparison mode. These options will be populated
-            from the backend dataset workflow when integration is
-            available.
+            The options below are mock catalogue records provided only
+            to exercise the complete frontend workflow before backend
+            integration.
           </p>
         </div>
 
         <div className="space-y-6">
           <DatasetSelector
-            datasets={availableDatasets}
-            selectedDatasetIds={selectedDatasetIds}
-            onSelectionChange={setSelectedDatasetIds}
+            datasets={mockDatasets}
+            selectedDatasetIds={datasetIds}
+            onSelectionChange={setDatasetIds}
           />
 
           <IndicatorSelector
-            indicators={availableIndicators}
-            selectedIndicatorIds={selectedIndicatorIds}
-            onSelectionChange={setSelectedIndicatorIds}
+            indicators={mockIndicators}
+            selectedIndicatorIds={indicators}
+            onSelectionChange={setIndicators}
           />
 
           <AnalysisControls
-            modes={availableAnalysisModes}
+            modes={mockAnalysisModes}
             selectedMode={selectedAnalysisMode}
             onModeChange={setSelectedAnalysisMode}
           />
@@ -208,40 +407,45 @@ function NewAnalysisPage() {
 
       <ValidationErrors errors={validationErrors} />
 
-      <ProcessingStatus status="idle" />
+      <ProcessingStatus
+        status={processingStatus}
+        message={processingMessage}
+      />
 
-      <section className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 p-6">
-        <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-800 text-slate-400">
-            <svg
-              viewBox="0 0 24 24"
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4 19V9m5 10V5m5 14v-7m5 7V3"
-              />
-            </svg>
-          </div>
-
+      <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-medium text-slate-300">
-              Analysis workflow
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400">
+              Mock Analysis
             </p>
 
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
-              Field-photo selection, local preview, study-area editing,
-              dataset configuration, and analysis status interfaces are
-              available. Backend upload, AI prediction, dataset
-              catalogue data, and analysis execution will be connected
-              in their respective integration phases.
+            <h2 className="mt-1 text-lg font-semibold text-white">
+              Start Analysis
+            </h2>
+
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+              The button becomes available after the photo, confirmed
+              polygon, dataset, indicator, and comparison-mode
+              requirements are satisfied.
             </p>
+
+            {analysisId && (
+              <p className="mt-3 text-xs text-emerald-300">
+                Mock analysis ID: {analysisId}
+              </p>
+            )}
           </div>
+
+          <button
+            type="button"
+            disabled={!canStartAnalysis}
+            onClick={handleStartAnalysis}
+            className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500"
+          >
+            {isSubmitting
+              ? 'Analysis Running...'
+              : 'Start Mock Analysis'}
+          </button>
         </div>
       </section>
     </div>

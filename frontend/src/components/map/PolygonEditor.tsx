@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react'
 import { useMap } from 'react-leaflet'
 import { Polygon } from 'leaflet'
 import type { Layer, LatLng } from 'leaflet'
-
 import '@geoman-io/leaflet-geoman-free'
 
 import {
@@ -16,7 +15,10 @@ export type StudyAreaPolygon = {
 }
 
 type PolygonEditorProps = {
-  onPolygonChange: (polygon: StudyAreaPolygon | null) => void
+  polygon: StudyAreaPolygon | null
+  onPolygonChange: (
+    polygon: StudyAreaPolygon | null,
+  ) => void
 }
 
 function layerToStudyAreaPolygon(
@@ -28,22 +30,34 @@ function layerToStudyAreaPolygon(
 
   const latLngs = layer.getLatLngs()
 
-  if (!Array.isArray(latLngs) || latLngs.length === 0) {
+  if (
+    !Array.isArray(latLngs) ||
+    latLngs.length === 0
+  ) {
     return null
   }
 
   const firstRing = latLngs[0]
 
-  if (!Array.isArray(firstRing) || firstRing.length < 3) {
+  if (
+    !Array.isArray(firstRing) ||
+    firstRing.length < 3
+  ) {
     return null
   }
 
-  const coordinates: GeoJsonPosition[] = (firstRing as LatLng[]).map(
-    (latLng) => leafletToGeoJson([latLng.lat, latLng.lng]),
+  const coordinates: GeoJsonPosition[] = (
+    firstRing as LatLng[]
+  ).map((latLng) =>
+    leafletToGeoJson([
+      latLng.lat,
+      latLng.lng,
+    ]),
   )
 
   const firstPosition = coordinates[0]
-  const lastPosition = coordinates[coordinates.length - 1]
+  const lastPosition =
+    coordinates[coordinates.length - 1]
 
   if (
     firstPosition[0] !== lastPosition[0] ||
@@ -59,10 +73,43 @@ function layerToStudyAreaPolygon(
 }
 
 function PolygonEditor({
+  polygon,
   onPolygonChange,
 }: PolygonEditorProps) {
   const map = useMap()
-  const activePolygonRef = useRef<Layer | null>(null)
+
+  const activePolygonRef =
+    useRef<Layer | null>(null)
+
+  const onPolygonChangeRef =
+    useRef(onPolygonChange)
+
+  useEffect(() => {
+    onPolygonChangeRef.current =
+      onPolygonChange
+  }, [onPolygonChange])
+
+  /*
+   * Synchronize the Leaflet layer with React/context state.
+   *
+   * If the polygon is cleared by an external action such
+   * as removing or replacing the photo, the visible
+   * Leaflet polygon must also be removed.
+   */
+  useEffect(() => {
+    if (
+      polygon === null &&
+      activePolygonRef.current !== null
+    ) {
+      const layer = activePolygonRef.current
+
+      activePolygonRef.current = null
+
+      if (map.hasLayer(layer)) {
+        map.removeLayer(layer)
+      }
+    }
+  }, [map, polygon])
 
   useEffect(() => {
     map.pm.addControls({
@@ -72,7 +119,9 @@ function PolygonEditor({
       drawCircleMarker: false,
       drawPolyline: false,
       drawRectangle: false,
+
       drawPolygon: true,
+
       drawCircle: false,
       drawText: false,
 
@@ -84,14 +133,19 @@ function PolygonEditor({
     })
 
     function updatePolygon(layer: Layer) {
-      const polygon = layerToStudyAreaPolygon(layer)
+      const updatedPolygon =
+        layerToStudyAreaPolygon(layer)
 
-      if (polygon) {
-        onPolygonChange(polygon)
+      if (updatedPolygon) {
+        onPolygonChangeRef.current(
+          updatedPolygon,
+        )
       }
     }
 
-    function attachPolygonListeners(layer: Layer) {
+    function attachPolygonListeners(
+      layer: Layer,
+    ) {
       layer.on('pm:edit', () => {
         updatePolygon(layer)
       })
@@ -120,21 +174,27 @@ function PolygonEditor({
       if (activePolygonRef.current) {
         map.removeLayer(event.layer)
         map.pm.disableDraw()
-
         return
       }
 
-      const polygon = layerToStudyAreaPolygon(event.layer)
+      const createdPolygon =
+        layerToStudyAreaPolygon(event.layer)
 
-      if (!polygon) {
+      if (!createdPolygon) {
         map.removeLayer(event.layer)
         return
       }
 
-      activePolygonRef.current = event.layer
+      activePolygonRef.current =
+        event.layer
 
-      attachPolygonListeners(event.layer)
-      onPolygonChange(polygon)
+      attachPolygonListeners(
+        event.layer,
+      )
+
+      onPolygonChangeRef.current(
+        createdPolygon,
+      )
 
       map.pm.disableDraw()
     }
@@ -153,27 +213,53 @@ function PolygonEditor({
     function handleRemove(event: {
       layer: Layer
     }) {
-      if (event.layer !== activePolygonRef.current) {
+      if (
+        event.layer !==
+        activePolygonRef.current
+      ) {
         return
       }
 
       activePolygonRef.current = null
-      onPolygonChange(null)
+
+      onPolygonChangeRef.current(null)
     }
 
-    map.on('pm:create', handleCreate)
-    map.on('pm:drawstart', handleDrawStart)
-    map.on('pm:remove', handleRemove)
+    map.on(
+      'pm:create',
+      handleCreate,
+    )
+
+    map.on(
+      'pm:drawstart',
+      handleDrawStart,
+    )
+
+    map.on(
+      'pm:remove',
+      handleRemove,
+    )
 
     return () => {
-      map.off('pm:create', handleCreate)
-      map.off('pm:drawstart', handleDrawStart)
-      map.off('pm:remove', handleRemove)
+      map.off(
+        'pm:create',
+        handleCreate,
+      )
+
+      map.off(
+        'pm:drawstart',
+        handleDrawStart,
+      )
+
+      map.off(
+        'pm:remove',
+        handleRemove,
+      )
 
       map.pm.disableDraw()
       map.pm.removeControls()
     }
-  }, [map, onPolygonChange])
+  }, [map])
 
   return null
 }
