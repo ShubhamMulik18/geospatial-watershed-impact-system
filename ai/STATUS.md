@@ -17,9 +17,11 @@ Completed
 - Converted the second farm-pond MPO image into a single-frame RGB PNG while preserving the original file.
 - Verified PyTorch and torchvision imports and confirmed Mac GPU availability.
 - Added image preprocessing in ai/inference/preprocess.py.
+- Implemented the CSV-based dataset loader in ai/training/dataset.py.
+- Successfully checked photograph loading and PyTorch batching.
 
 Current Task
-Collect more verified photographs from different physical sites.
+Collect more verified photographs from different physical sites, especially percolation tanks.
 
 Important Files
 - ai/config/classes.json
@@ -49,6 +51,8 @@ Validation Results
 - Model training and evaluation: not started.
 - Image preprocessing: PASS on 2 photographs.
 - Preprocessing output: shape (3, 224, 224), float32, CPU.
+- Dataset loader check (2026-10-03): PASS — 7/7 photographs loaded with labels from the manifest.
+- First batch: images (4, 3, 224, 224), labels (4,).
 
 Next Tasks
 1. Create photograph folders for the agreed classes.
