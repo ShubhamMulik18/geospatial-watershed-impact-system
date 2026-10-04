@@ -28,25 +28,19 @@ import {
   mockIndicators,
   mockPrediction,
 } from '../mocks/analysisMockData'
+import { uploadPhoto } from '../services/photoApi'
 
 const unavailableMetadata: PhotoMetadataData = {
   latitude: null,
   longitude: null,
   capturedAt: null,
-  cameraMake: null,
-  cameraModel: null,
-}
-
-const mockPhotoMetadata: PhotoMetadataData = {
-  latitude: null,
-  longitude: null,
-  capturedAt: null,
-  cameraMake: null,
-  cameraModel: null,
+  exifStatus: 'missing',
+  warnings: [],
 }
 
 function NewAnalysisPage() {
   const {
+    photoId,
     photoMetadata,
     prediction,
     confirmedPolygon,
@@ -81,6 +75,12 @@ function NewAnalysisPage() {
 
   const [selectedAnalysisMode, setSelectedAnalysisMode] =
     useState<AnalysisMode | null>(null)
+
+  const [isPhotoUploading, setIsPhotoUploading] =
+    useState(false)
+
+  const [photoUploadError, setPhotoUploadError] =
+    useState<string | null>(null)
 
   const [isPredictionLoading, setIsPredictionLoading] =
     useState(false)
@@ -126,34 +126,103 @@ function NewAnalysisPage() {
     setProcessingMessage(null)
 
     /*
-     * Phase 10/11 mock workflow:
-     * this is not a real backend photo ID or extracted EXIF metadata.
+     * Clear any previous photo-dependent state while
+     * the newly selected photo is being uploaded.
      */
-    setPhoto(
-      `mock-photo-${requestId}`,
-      mockPhotoMetadata,
-    )
+    setPhoto(null, null)
 
-    setIsPredictionLoading(true)
+    setPhotoUploadError(null)
+    setIsPhotoUploading(true)
 
-    await wait(700)
+    try {
+      /*
+       * Phase 5 real backend integration.
+       *
+       * The backend stores the photo and returns:
+       * - photo_id
+       * - latitude
+       * - longitude
+       * - capture_date
+       * - exif_status
+       * - warnings
+       */
+      const uploadedPhoto = await uploadPhoto(file)
 
-    if (!isCurrentPhotoRequest(requestId)) {
-      return
+      /*
+       * Ignore a late response if another photo was
+       * selected or this photo was removed meanwhile.
+       */
+      if (!isCurrentPhotoRequest(requestId)) {
+        return
+      }
+
+      const metadata: PhotoMetadataData = {
+        latitude: uploadedPhoto.latitude,
+        longitude: uploadedPhoto.longitude,
+        capturedAt: uploadedPhoto.capture_date,
+        exifStatus: uploadedPhoto.exif_status,
+        warnings: uploadedPhoto.warnings,
+      }
+
+      /*
+       * Store the REAL backend photo ID and metadata
+       * in the shared analysis context.
+       */
+      setPhoto(
+        uploadedPhoto.photo_id,
+        metadata,
+      )
+
+      /*
+       * AI inference is still mocked.
+       *
+       * Person 3's real trained model/backend inference
+       * endpoint is not ready yet, so we do not pretend
+       * this prediction came from the backend.
+       */
+      setIsPredictionLoading(true)
+
+      await wait(700)
+
+      if (!isCurrentPhotoRequest(requestId)) {
+        return
+      }
+
+      setPrediction(
+        `mock-prediction-${requestId}`,
+        mockPrediction,
+      )
+
+      setIsPredictionLoading(false)
+    } catch (error) {
+      if (!isCurrentPhotoRequest(requestId)) {
+        return
+      }
+
+      /*
+       * A failed upload must never create a fake photo ID.
+       */
+      setPhoto(null, null)
+      setPrediction(null, null)
+
+      setIsPredictionLoading(false)
+
+      setPhotoUploadError(
+        error instanceof Error
+          ? error.message
+          : 'Photo upload failed.',
+      )
+    } finally {
+      if (isCurrentPhotoRequest(requestId)) {
+        setIsPhotoUploading(false)
+      }
     }
-
-    setPrediction(
-      `mock-prediction-${requestId}`,
-      mockPrediction,
-    )
-
-    setIsPredictionLoading(false)
   }
 
   function handlePhotoRemove() {
     /*
-     * Starting a new photo request invalidates any late response
-     * belonging to the photo being removed.
+     * Starting a new request ID invalidates any late
+     * backend response belonging to the removed photo.
      */
     beginPhotoRequest()
 
@@ -167,6 +236,10 @@ function NewAnalysisPage() {
     setPreviewUrl(null)
 
     setSelectedAnalysisMode(null)
+
+    setIsPhotoUploading(false)
+    setPhotoUploadError(null)
+
     setIsPredictionLoading(false)
 
     setProcessingStatus('idle')
@@ -179,7 +252,35 @@ function NewAnalysisPage() {
 
   if (!selectedPhoto) {
     validationErrors.push(
-      'Upload a field photo to begin the mock analysis workflow.',
+      'Upload a field photo to begin the analysis workflow.',
+    )
+  }
+
+  if (selectedPhoto && isPhotoUploading) {
+    validationErrors.push(
+      'Wait for the field photo upload to complete.',
+    )
+  }
+
+  if (selectedPhoto && photoUploadError) {
+    validationErrors.push(
+      'The selected field photo could not be uploaded.',
+    )
+  }
+
+  /*
+   * A selected local file is not enough.
+   * The real backend must successfully store the photo
+   * and return a photo_id before analysis can begin.
+   */
+  if (
+    selectedPhoto &&
+    !isPhotoUploading &&
+    !photoUploadError &&
+    !photoId
+  ) {
+    validationErrors.push(
+      'The field photo must be successfully stored by the backend before analysis can begin.',
     )
   }
 
@@ -209,7 +310,27 @@ function NewAnalysisPage() {
 
   const canStartAnalysis =
     validationErrors.length === 0 &&
-    !isSubmitting
+    !isSubmitting &&
+    !isPhotoUploading
+
+  /*
+   * AnalysisMap expects GeoJSON coordinate order:
+   *
+   * [longitude, latitude]
+   *
+   * Only use a location when BOTH coordinates were
+   * returned by the real backend.
+   *
+   * We never invent coordinates when EXIF GPS is missing.
+   */
+  const photoLocation: [number, number] | null =
+    photoMetadata?.latitude != null &&
+    photoMetadata?.longitude != null
+      ? [
+          photoMetadata.longitude,
+          photoMetadata.latitude,
+        ]
+      : null
 
   async function handleStartAnalysis() {
     if (!canStartAnalysis) {
@@ -222,6 +343,10 @@ function NewAnalysisPage() {
       return
     }
 
+    /*
+     * Analysis execution remains mocked until Person 2's
+     * analysis execution API is available.
+     */
     setProcessingStatus('created')
     setProcessingMessage(
       'Mock analysis request created.',
@@ -263,7 +388,7 @@ function NewAnalysisPage() {
 
     setProcessingStatus('completed')
     setProcessingMessage(
-      'Mock analysis completed successfully. No real backend processing was performed.',
+      'Mock analysis completed successfully. No real backend analysis processing was performed.',
     )
   }
 
@@ -275,8 +400,8 @@ function NewAnalysisPage() {
             Analysis Workspace
           </p>
 
-          <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-300">
-            Mock Mode
+          <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-xs font-semibold text-sky-300">
+            Hybrid Integration
           </span>
         </div>
 
@@ -285,16 +410,18 @@ function NewAnalysisPage() {
         </h1>
 
         <p className="mt-3 max-w-3xl leading-7 text-slate-400">
-          Configure a watershed impact assessment using field evidence,
-          a confirmed study area, compatible geospatial datasets, and
-          supported analysis indicators.
+          Configure a watershed impact assessment using field
+          evidence, a confirmed study area, compatible
+          geospatial datasets, and supported analysis
+          indicators.
         </p>
 
-        <div className="mt-5 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
-          <p className="text-sm leading-6 text-amber-200/80">
-            Frontend demonstration mode is active. Dataset records,
-            AI prediction, identifiers, and processing states shown in
-            this workflow are mock data and are not backend results.
+        <div className="mt-5 rounded-xl border border-sky-500/20 bg-sky-500/5 px-4 py-3">
+          <p className="text-sm leading-6 text-sky-200/80">
+            Field photos are uploaded through the real backend
+            photo service. Dataset records, AI prediction,
+            analysis execution, and results remain mock data
+            until their backend integrations are available.
           </p>
         </div>
       </section>
@@ -369,7 +496,41 @@ function NewAnalysisPage() {
         </div>
       )}
 
-      <AnalysisMap location={null} />
+      {isPhotoUploading && (
+        <div className="rounded-xl border border-sky-500/20 bg-sky-500/10 p-4">
+          <div className="flex items-center gap-3">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-sky-300/30 border-t-sky-300" />
+
+            <div>
+              <p className="text-sm font-semibold text-sky-200">
+                Uploading field photo
+              </p>
+
+              <p className="mt-1 text-sm text-sky-200/70">
+                The backend is storing the photo and reading
+                available EXIF metadata.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {photoUploadError && (
+        <div
+          role="alert"
+          className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-4"
+        >
+          <p className="text-sm font-semibold text-rose-300">
+            Photo upload failed
+          </p>
+
+          <p className="mt-1 text-sm text-rose-300/80">
+            {photoUploadError}
+          </p>
+        </div>
+      )}
+
+      <AnalysisMap location={photoLocation} />
 
       <section>
         <div className="mb-5">
@@ -382,9 +543,9 @@ function NewAnalysisPage() {
           </h2>
 
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-            The options below are mock catalogue records provided only
-            to exercise the complete frontend workflow before backend
-            integration.
+            The dataset options below are currently mock
+            catalogue records. Real dataset catalogue
+            integration will be connected separately.
           </p>
         </div>
 
@@ -422,7 +583,7 @@ function NewAnalysisPage() {
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400">
-              Mock Analysis
+              Analysis
             </p>
 
             <h2 className="mt-1 text-lg font-semibold text-white">
@@ -430,9 +591,9 @@ function NewAnalysisPage() {
             </h2>
 
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-              The button becomes available after the photo, confirmed
-              polygon, dataset, indicator, and comparison-mode
-              requirements are satisfied.
+              The button becomes available after the photo
+              upload, confirmed polygon, dataset, indicator,
+              and comparison-mode requirements are satisfied.
             </p>
 
             {analysisId && (

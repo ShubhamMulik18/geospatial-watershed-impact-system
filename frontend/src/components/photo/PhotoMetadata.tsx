@@ -1,9 +1,9 @@
-type PhotoMetadataData = {
+export type PhotoMetadataData = {
   latitude: number | null
   longitude: number | null
   capturedAt: string | null
-  cameraMake: string | null
-  cameraModel: string | null
+  exifStatus: 'available' | 'partial' | 'missing' | 'invalid'
+  warnings: string[]
 }
 
 type PhotoMetadataProps = {
@@ -36,9 +36,25 @@ function MetadataValue({
   )
 }
 
+function formatExifStatus(
+  status: PhotoMetadataData['exifStatus'],
+) {
+  switch (status) {
+    case 'available':
+      return 'Available'
+    case 'partial':
+      return 'Partial'
+    case 'missing':
+      return 'Missing'
+    case 'invalid':
+      return 'Invalid'
+  }
+}
+
 function PhotoMetadata({ metadata }: PhotoMetadataProps) {
   const hasGps =
-    metadata.latitude !== null && metadata.longitude !== null
+    metadata.latitude !== null &&
+    metadata.longitude !== null
 
   return (
     <section
@@ -59,7 +75,7 @@ function PhotoMetadata({ metadata }: PhotoMetadataProps) {
           </h2>
 
           <p className="mt-2 text-sm leading-6 text-slate-400">
-            Metadata associated with the selected field photograph.
+            Metadata returned by the photo processing service.
           </p>
         </div>
 
@@ -70,7 +86,9 @@ function PhotoMetadata({ metadata }: PhotoMetadataProps) {
               : 'border-amber-500/20 bg-amber-500/10 text-amber-300'
           }`}
         >
-          {hasGps ? 'Location available' : 'Location unavailable'}
+          {hasGps
+            ? 'Location available'
+            : 'Location unavailable'}
         </span>
       </div>
 
@@ -91,53 +109,40 @@ function PhotoMetadata({ metadata }: PhotoMetadataProps) {
         />
 
         <MetadataValue
-          label="Camera Make"
-          value={metadata.cameraMake}
-        />
-
-        <MetadataValue
-          label="Camera Model"
-          value={metadata.cameraModel}
+          label="EXIF Status"
+          value={formatExifStatus(metadata.exifStatus)}
         />
       </div>
 
+      {metadata.warnings.length > 0 && (
+        <div className="mt-5 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4">
+          <p className="text-sm font-semibold text-amber-300">
+            Metadata warnings
+          </p>
+
+          <ul className="mt-2 space-y-1 text-sm leading-6 text-amber-200/80">
+            {metadata.warnings.map((warning, index) => (
+              <li key={`${warning}-${index}`}>
+                • {warning}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {!hasGps && (
-        <div className="mt-5 flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4">
-          <svg
-            viewBox="0 0 24 24"
-            className="mt-0.5 h-5 w-5 shrink-0 text-amber-400"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 21s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12Z"
-            />
-
-            <circle cx="12" cy="9" r="2.5" />
-          </svg>
-
-          <div>
-            <p className="text-sm font-semibold text-amber-300">
-              Photo location is unavailable
-            </p>
-
-            <p className="mt-1 text-sm leading-6 text-amber-200/70">
-              GPS coordinates were not provided for this photo. The system will
-              not estimate or invent a location.
-            </p>
-          </div>
+        <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950/40 p-4">
+          <p className="text-sm text-slate-400">
+            GPS coordinates are unavailable. The frontend will
+            not estimate or invent a photo location.
+          </p>
         </div>
       )}
 
       {metadata.capturedAt === null && (
         <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950/40 p-4">
           <p className="text-sm text-slate-400">
-            Capture date is unavailable and will remain unset until valid
-            metadata is provided.
+            Capture date is unavailable and will remain unset.
           </p>
         </div>
       )}
@@ -145,5 +150,4 @@ function PhotoMetadata({ metadata }: PhotoMetadataProps) {
   )
 }
 
-export type { PhotoMetadataData }
 export default PhotoMetadata

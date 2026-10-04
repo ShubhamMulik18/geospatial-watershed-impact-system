@@ -107,8 +107,8 @@ function PhotoPreview({
           </svg>
 
           <p className="text-sm leading-6 text-sky-200/80">
-            This is a local browser preview. The photo has not been uploaded to
-            the backend yet.
+            This preview is generated locally from the selected photo. Upload
+            and metadata status are shown in the Photo Metadata section.
           </p>
         </div>
       </div>
