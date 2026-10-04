@@ -26,6 +26,8 @@ Completed
 - Added ai/inference/model.py as the shared MobileNetV2 model structure.
 - Added check_dam_0004 and farm_pond_0004 with source and licence details.
 - Prepared ai/config/train.yaml with initial training settings.
+- Implemented site-grouped split preparation and added automated tests.
+- Saved a development split and verified all three dataset loaders.
 
 Current Task
 Collect more verified photographs from different physical sites, especially contour trenches, before assigning dataset splits.
@@ -37,7 +39,7 @@ Important Files
 - ai/STATUS.md
 
 Validation Results
-- Latest dataset validation date: 2026-10-03.
+- Latest dataset validation date: 2026-10-04.
 - Class configuration JSON: loaded and validated successfully.
 - Dataset validator: PASS — 15 records.
 - Readable images: 15/15.
@@ -47,8 +49,10 @@ Validation Results
 - Percolation Tank: 3 images from 3 recorded sites.
 - Contour Trench: 4 images from 3 recorded sites.
 - Other/Unknown examples: 0.
-- SHA-256 fields: 13 populated, 0 blank; all match their image files.
-- Train/validation/test splits: 15 unassigned.
+- SHA-256 fields: 15 populated, 0 blank; all match their image files.
+- Development split: 7 training, 4 validation, 4 test photographs.
+- Distinct site groups: 13.
+- Unassigned splits: 0.
 - Python version: 3.13.0.
 - Pillow version: 12.3.0.
 - PyTorch version: 2.14.0.
@@ -57,7 +61,11 @@ Validation Results
 - Mac GPU (MPS): available.
 - Earlier standalone preprocessing check: PASS on 2 photographs.
 - Preprocessing output: shape (3, 224, 224), float32, CPU.
-- Dataset loader check (2026-10-03): PASS — 15/15 photographs loaded with labels from the manifest.
+- Earlier collection loader check (2026-10-03): PASS — 15/15 photographs loaded with labels from the manifest.
+- Training dataset loader check (2026-10-04): PASS — 7/7.
+- Validation dataset loader check (2026-10-04): PASS — 4/4.
+- Test dataset loader check (2026-10-04): PASS — 4/4.
+- Class mapping: consistent across all three splits.
 - First batch: images (4, 3, 224, 224), labels (4,).
 - Model training and evaluation: not started.
 - Model structure check (2026-10-03): PASS on CPU using random weights.
