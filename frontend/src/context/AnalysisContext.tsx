@@ -9,6 +9,7 @@ import {
 import type { StudyAreaPolygon } from '../components/map/PolygonEditor'
 import type { PhotoMetadataData } from '../components/photo/PhotoMetadata'
 import type { PredictionData } from '../components/photo/PredictionCard'
+import type { DatasetMetadata } from '../types/dataset'
 import {
   AnalysisContext,
   type AnalysisContextValue,
@@ -40,6 +41,9 @@ export function AnalysisProvider({
 
   const [datasetIds, setDatasetIdsState] =
     useState<string[]>([])
+
+  const [selectedDatasets, setSelectedDatasetsState] =
+    useState<DatasetMetadata[]>([])
 
   const [indicators, setIndicatorsState] =
     useState<string[]>([])
@@ -89,6 +93,7 @@ export function AnalysisProvider({
       setConfirmedPolygon(null)
 
       setDatasetIdsState([])
+      setSelectedDatasetsState([])
       setIndicatorsState([])
 
       setAnalysisIdState(null)
@@ -143,6 +148,13 @@ export function AnalysisProvider({
       invalidateAnalysis()
     },
     [invalidateAnalysis],
+  )
+
+  const handleSetSelectedDatasets = useCallback(
+    (nextDatasets: DatasetMetadata[]) => {
+      setSelectedDatasetsState(nextDatasets)
+    },
+    [],
   )
 
   const handleSetIndicators = useCallback(
@@ -237,6 +249,7 @@ export function AnalysisProvider({
     setConfirmedPolygon(null)
 
     setDatasetIdsState([])
+    setSelectedDatasetsState([])
     setIndicatorsState([])
 
     setAnalysisIdState(null)
@@ -259,6 +272,7 @@ export function AnalysisProvider({
       confirmedPolygon,
 
       datasetIds,
+      selectedDatasets,
       indicators,
 
       analysisId,
@@ -274,6 +288,7 @@ export function AnalysisProvider({
       confirmPolygon: handleConfirmPolygon,
 
       setDatasetIds: handleSetDatasetIds,
+      setSelectedDatasets: handleSetSelectedDatasets,
       setIndicators: handleSetIndicators,
 
       setAnalysisId: handleSetAnalysisId,
@@ -297,6 +312,7 @@ export function AnalysisProvider({
       draftPolygon,
       confirmedPolygon,
       datasetIds,
+      selectedDatasets,
       indicators,
       analysisId,
       validationIsStale,
@@ -307,6 +323,7 @@ export function AnalysisProvider({
       handleSetDraftPolygon,
       handleConfirmPolygon,
       handleSetDatasetIds,
+      handleSetSelectedDatasets,
       handleSetIndicators,
       handleSetAnalysisId,
       markValidationFresh,

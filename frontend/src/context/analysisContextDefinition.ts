@@ -3,6 +3,7 @@ import { createContext } from 'react'
 import type { StudyAreaPolygon } from '../components/map/PolygonEditor'
 import type { PhotoMetadataData } from '../components/photo/PhotoMetadata'
 import type { PredictionData } from '../components/photo/PredictionCard'
+import type { DatasetMetadata } from '../types/dataset'
 
 export type AnalysisContextValue = {
   photoId: string | null
@@ -15,6 +16,7 @@ export type AnalysisContextValue = {
   confirmedPolygon: StudyAreaPolygon | null
 
   datasetIds: string[]
+  selectedDatasets: DatasetMetadata[]
   indicators: string[]
 
   analysisId: string | null
@@ -43,6 +45,10 @@ export type AnalysisContextValue = {
 
   setDatasetIds: (
     datasetIds: string[],
+  ) => void
+
+  setSelectedDatasets: (
+    datasets: DatasetMetadata[],
   ) => void
 
   setIndicators: (

@@ -54,6 +54,7 @@ function NewAnalysisPage() {
     setPhoto,
     setPrediction,
     setDatasetIds,
+    setSelectedDatasets,
     setIndicators,
     setAnalysisId,
 
@@ -106,15 +107,14 @@ function NewAnalysisPage() {
   const previewUrlRef = useRef<string | null>(null)
 
   /*
-   * Phase 10 catalogue synchronisation.
+   * Phase 11 catalogue synchronisation.
    *
-   * The backend catalogue is now the source of truth for
-   * available dataset IDs.
+   * The backend catalogue is the source of truth for
+   * available dataset IDs and their real metadata.
    *
-   * If a previously selected dataset is no longer returned by
-   * GET /api/datasets, remove only that stale selection.
-   *
-   * Valid selections are preserved.
+   * If a selected dataset disappears from the catalogue,
+   * remove the stale ID and keep selected dataset metadata
+   * synchronized with the remaining valid IDs.
    */
   const reconcileDatasetSelection = useCallback(
     (
@@ -129,25 +129,27 @@ function NewAnalysisPage() {
           availableDatasetIds.has(datasetId),
       )
 
+      const validSelectedDatasets = catalogue.filter(
+        (dataset) =>
+          validDatasetIds.includes(dataset.id),
+      )
+
+      setSelectedDatasets(validSelectedDatasets)
+
       if (validDatasetIds.length !== datasetIds.length) {
         setDatasetIds(validDatasetIds)
       }
     },
-    [datasetIds, setDatasetIds],
+    [
+      datasetIds,
+      setDatasetIds,
+      setSelectedDatasets,
+    ],
   )
 
   /*
-   * Load the real dataset catalogue.
-   *
-   * Catalogue:
-   * GET /api/datasets
-   *
-   * Dataset upload:
-   * POST /api/datasets/upload
-   *
-   * AI prediction, indicator processing and analysis
-   * execution remain mocked until their backend services
-   * are available.
+   * Reload the real dataset catalogue after a successful
+   * upload and reconcile the existing selection.
    */
   const loadDatasets = useCallback(async () => {
     setDatasetsError(null)
@@ -162,6 +164,10 @@ function NewAnalysisPage() {
 
   /*
    * Initial catalogue load.
+   *
+   * This effect intentionally runs only once when the page
+   * mounts. Dataset selection changes must not trigger
+   * repeated GET /api/datasets requests.
    */
   useEffect(() => {
     let isActive = true
@@ -178,7 +184,6 @@ function NewAnalysisPage() {
         }
 
         setDatasets(catalogue)
-        reconcileDatasetSelection(catalogue)
       } catch (error) {
         if (!isActive) {
           return
@@ -203,7 +208,7 @@ function NewAnalysisPage() {
     return () => {
       isActive = false
     }
-  }, [reconcileDatasetSelection])
+  }, [])
 
   /*
    * After a real dataset upload succeeds, reload the
@@ -219,6 +224,28 @@ function NewAnalysisPage() {
           : 'The dataset was uploaded, but the catalogue could not be refreshed.',
       )
     }
+  }
+
+  /*
+   * Store both the selected IDs and the corresponding real
+   * backend dataset metadata.
+   *
+   * Dataset IDs remain the authoritative selection used by
+   * the workflow. The metadata is retained so the Results
+   * page can display the actual selected dataset names,
+   * dates, resolution and other catalogue information.
+   */
+  function handleDatasetSelectionChange(
+    nextDatasetIds: string[],
+  ) {
+    setDatasetIds(nextDatasetIds)
+
+    const nextSelectedDatasets = datasets.filter(
+      (dataset) =>
+        nextDatasetIds.includes(dataset.id),
+    )
+
+    setSelectedDatasets(nextSelectedDatasets)
   }
 
   useEffect(() => {
@@ -716,7 +743,9 @@ function NewAnalysisPage() {
             <DatasetSelector
               datasets={datasets}
               selectedDatasetIds={datasetIds}
-              onSelectionChange={setDatasetIds}
+              onSelectionChange={
+                handleDatasetSelectionChange
+              }
             />
           )}
 
