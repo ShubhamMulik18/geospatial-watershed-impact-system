@@ -9,6 +9,7 @@ import AnalysisControls, {
   type AnalysisMode,
 } from '../components/analysis/AnalysisControls'
 import DatasetSelector from '../components/analysis/DatasetSelector'
+import DatasetUploader from '../components/analysis/DatasetUploader'
 import IndicatorSelector from '../components/analysis/IndicatorSelector'
 import ProcessingStatus, {
   type ProcessingState,
@@ -24,10 +25,10 @@ import PredictionCard from '../components/photo/PredictionCard'
 import { useAnalysis } from '../context/useAnalysis'
 import {
   mockAnalysisModes,
-  mockDatasets,
   mockIndicators,
   mockPrediction,
 } from '../mocks/analysisMockData'
+import { getDatasets } from '../services/datasetApi'
 import { uploadPhoto } from '../services/photoApi'
 
 const unavailableMetadata: PhotoMetadataData = {
@@ -82,6 +83,16 @@ function NewAnalysisPage() {
   const [photoUploadError, setPhotoUploadError] =
     useState<string | null>(null)
 
+  const [datasets, setDatasets] = useState<
+    Awaited<ReturnType<typeof getDatasets>>
+  >([])
+
+  const [isDatasetsLoading, setIsDatasetsLoading] =
+    useState(true)
+
+  const [datasetsError, setDatasetsError] =
+    useState<string | null>(null)
+
   const [isPredictionLoading, setIsPredictionLoading] =
     useState(false)
 
@@ -92,6 +103,80 @@ function NewAnalysisPage() {
     useState<string | null>(null)
 
   const previewUrlRef = useRef<string | null>(null)
+
+  /*
+   * Phase 9 real dataset catalogue integration.
+   *
+   * Catalogue:
+   * GET /api/datasets
+   *
+   * Dataset upload:
+   * POST /api/datasets/upload
+   *
+   * AI prediction, indicator processing and analysis
+   * execution remain mocked until their backend services
+   * are available.
+   */
+  useEffect(() => {
+    let isActive = true
+
+    async function loadDatasets() {
+      setIsDatasetsLoading(true)
+      setDatasetsError(null)
+
+      try {
+        const catalogue = await getDatasets()
+
+        if (!isActive) {
+          return
+        }
+
+        setDatasets(catalogue)
+      } catch (error) {
+        if (!isActive) {
+          return
+        }
+
+        setDatasets([])
+
+        setDatasetsError(
+          error instanceof Error
+            ? error.message
+            : 'Unable to load the dataset catalogue.',
+        )
+      } finally {
+        if (isActive) {
+          setIsDatasetsLoading(false)
+        }
+      }
+    }
+
+    void loadDatasets()
+
+    return () => {
+      isActive = false
+    }
+  }, [])
+
+  /*
+   * After a real dataset upload succeeds, reload the
+   * catalogue from the backend.
+   */
+  async function handleDatasetUploadSuccess() {
+    setDatasetsError(null)
+
+    try {
+      const catalogue = await getDatasets()
+
+      setDatasets(catalogue)
+    } catch (error) {
+      setDatasetsError(
+        error instanceof Error
+          ? error.message
+          : 'The dataset was uploaded, but the catalogue could not be refreshed.',
+      )
+    }
+  }
 
   useEffect(() => {
     return () => {
@@ -126,8 +211,8 @@ function NewAnalysisPage() {
     setProcessingMessage(null)
 
     /*
-     * Clear any previous photo-dependent state while
-     * the newly selected photo is being uploaded.
+     * Clear previous photo-dependent state while the
+     * newly selected photo is uploaded.
      */
     setPhoto(null, null)
 
@@ -136,21 +221,13 @@ function NewAnalysisPage() {
 
     try {
       /*
-       * Phase 5 real backend integration.
-       *
-       * The backend stores the photo and returns:
-       * - photo_id
-       * - latitude
-       * - longitude
-       * - capture_date
-       * - exif_status
-       * - warnings
+       * Real photo backend integration.
        */
       const uploadedPhoto = await uploadPhoto(file)
 
       /*
        * Ignore a late response if another photo was
-       * selected or this photo was removed meanwhile.
+       * selected or this photo was removed.
        */
       if (!isCurrentPhotoRequest(requestId)) {
         return
@@ -165,8 +242,7 @@ function NewAnalysisPage() {
       }
 
       /*
-       * Store the REAL backend photo ID and metadata
-       * in the shared analysis context.
+       * Store the real backend photo ID and metadata.
        */
       setPhoto(
         uploadedPhoto.photo_id,
@@ -174,11 +250,7 @@ function NewAnalysisPage() {
       )
 
       /*
-       * AI inference is still mocked.
-       *
-       * Person 3's real trained model/backend inference
-       * endpoint is not ready yet, so we do not pretend
-       * this prediction came from the backend.
+       * AI inference remains mocked.
        */
       setIsPredictionLoading(true)
 
@@ -200,7 +272,7 @@ function NewAnalysisPage() {
       }
 
       /*
-       * A failed upload must never create a fake photo ID.
+       * Failed uploads must never create a fake photo ID.
        */
       setPhoto(null, null)
       setPrediction(null, null)
@@ -221,8 +293,8 @@ function NewAnalysisPage() {
 
   function handlePhotoRemove() {
     /*
-     * Starting a new request ID invalidates any late
-     * backend response belonging to the removed photo.
+     * Invalidate any late backend response belonging to
+     * the removed photo.
      */
     beginPhotoRequest()
 
@@ -270,8 +342,7 @@ function NewAnalysisPage() {
 
   /*
    * A selected local file is not enough.
-   * The real backend must successfully store the photo
-   * and return a photo_id before analysis can begin.
+   * The backend must successfully store the photo.
    */
   if (
     selectedPhoto &&
@@ -290,7 +361,19 @@ function NewAnalysisPage() {
     )
   }
 
-  if (datasetIds.length < 2) {
+  /*
+   * Analysis cannot proceed while the real catalogue is
+   * loading or unavailable.
+   */
+  if (isDatasetsLoading) {
+    validationErrors.push(
+      'Wait for the dataset catalogue to finish loading.',
+    )
+  } else if (datasetsError) {
+    validationErrors.push(
+      'The dataset catalogue must be available before analysis can begin.',
+    )
+  } else if (datasetIds.length < 2) {
     validationErrors.push(
       'Select at least two distinct compatible datasets.',
     )
@@ -314,14 +397,12 @@ function NewAnalysisPage() {
     !isPhotoUploading
 
   /*
-   * AnalysisMap expects GeoJSON coordinate order:
+   * AnalysisMap expects:
    *
    * [longitude, latitude]
    *
-   * Only use a location when BOTH coordinates were
-   * returned by the real backend.
-   *
-   * We never invent coordinates when EXIF GPS is missing.
+   * Coordinates are only used when both values were
+   * returned by the backend.
    */
   const photoLocation: [number, number] | null =
     photoMetadata?.latitude != null &&
@@ -344,8 +425,8 @@ function NewAnalysisPage() {
     }
 
     /*
-     * Analysis execution remains mocked until Person 2's
-     * analysis execution API is available.
+     * Analysis execution remains mocked until the real
+     * backend analysis API becomes available.
      */
     setProcessingStatus('created')
     setProcessingMessage(
@@ -368,10 +449,6 @@ function NewAnalysisPage() {
 
     await wait(1200)
 
-    /*
-     * finishSubmission rejects a response belonging to an
-     * invalidated or older analysis request.
-     */
     const isCurrentRequest =
       finishSubmission(requestId)
 
@@ -418,10 +495,12 @@ function NewAnalysisPage() {
 
         <div className="mt-5 rounded-xl border border-sky-500/20 bg-sky-500/5 px-4 py-3">
           <p className="text-sm leading-6 text-sky-200/80">
-            Field photos are uploaded through the real backend
-            photo service. Dataset records, AI prediction,
-            analysis execution, and results remain mock data
-            until their backend integrations are available.
+            Field photos, dataset catalogue records, and
+            GeoTIFF dataset uploads are connected to the real
+            backend. AI prediction, indicator processing,
+            analysis execution, and results remain in
+            demonstration mode until their backend
+            integrations are available.
           </p>
         </div>
       </section>
@@ -543,18 +622,60 @@ function NewAnalysisPage() {
           </h2>
 
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-            The dataset options below are currently mock
-            catalogue records. Real dataset catalogue
-            integration will be connected separately.
+            Dataset catalogue records and GeoTIFF uploads are
+            connected to the backend. Indicator selection and
+            analysis execution remain in demonstration mode
+            until their backend services are available.
           </p>
         </div>
 
         <div className="space-y-6">
-          <DatasetSelector
-            datasets={mockDatasets}
-            selectedDatasetIds={datasetIds}
-            onSelectionChange={setDatasetIds}
+          <DatasetUploader
+            onUploadSuccess={handleDatasetUploadSuccess}
           />
+
+          {isDatasetsLoading ? (
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+              <div className="flex items-center gap-3">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-300/30 border-t-emerald-300" />
+
+                <div>
+                  <p className="text-sm font-semibold text-slate-200">
+                    Loading dataset catalogue
+                  </p>
+
+                  <p className="mt-1 text-sm text-slate-400">
+                    Requesting available geospatial datasets
+                    from the backend.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : datasetsError ? (
+            <div
+              role="alert"
+              className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-6"
+            >
+              <p className="font-semibold text-rose-300">
+                Dataset catalogue unavailable
+              </p>
+
+              <p className="mt-2 text-sm leading-6 text-rose-300/80">
+                {datasetsError}
+              </p>
+
+              <p className="mt-3 text-xs leading-5 text-slate-400">
+                Make sure the FastAPI backend and database are
+                running, then reload this page.
+              </p>
+            </div>
+          ) : (
+            <DatasetSelector
+              datasets={datasets}
+              selectedDatasetIds={datasetIds}
+              onSelectionChange={setDatasetIds}
+            />
+          )}
 
           <IndicatorSelector
             indicators={mockIndicators}
