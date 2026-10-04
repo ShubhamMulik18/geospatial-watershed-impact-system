@@ -28,6 +28,8 @@ Completed
 - Prepared ai/config/train.yaml with initial training settings.
 - Implemented site-grouped split preparation and added automated tests.
 - Saved a development split and verified all three dataset loaders.
+- Implemented the development training script and completed the first 10-epoch training run.
+- Saved the best development checkpoint using validation macro F1.
 
 Current Task
 Collect more verified photographs from different physical sites, especially contour trenches, before assigning dataset splits.
@@ -64,15 +66,27 @@ Validation Results
 - Earlier collection loader check (2026-10-03): PASS — 15/15 photographs loaded with labels from the manifest.
 - Training dataset loader check (2026-10-04): PASS — 7/7.
 - Validation dataset loader check (2026-10-04): PASS — 4/4.
-- Test dataset loader check (2026-10-04): PASS — 4/4.
+- Test dataset loader check (2026-10-04): PASS — 4/4; loading check only.
 - Class mapping: consistent across all three splits.
 - First batch: images (4, 3, 224, 224), labels (4,).
-- Model training and evaluation: not started.
 - Model structure check (2026-10-03): PASS on CPU using random weights.
 - Model input shapes: (1, 3, 224, 224) and (4, 3, 224, 224).
 - Model output shapes: (1, 4) and (4, 4).
 - Classification-head gradients and frozen-backbone checks: PASS.
 - Backbone unfreeze and evaluation-mode checks: PASS.
+- Training preflight check (2026-10-04): PASS.
+- Pretrained MobileNetV2 V2 weights: downloaded successfully.
+- First development training date: 2026-10-04.
+- Development training: PASS — 10 epochs completed.
+- Training photographs: 7.
+- Validation photographs: 4.
+- Best checkpoint: epoch 7.
+- Best validation macro F1: 0.2500.
+- Validation loss at the selected epoch: 1.3960.
+- Checkpoint: ai/models/training_runs/dev-20261004T094431Z-bns0tl6u/best.pt.
+- Held-out test evaluation: not performed.
+- Confidence threshold: not selected.
+- Development result only; the dataset is too small for reliable accuracy claims.
 
 Next Tasks
 1. Create photograph folders for the agreed classes.
