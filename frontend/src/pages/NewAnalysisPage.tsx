@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -105,7 +106,38 @@ function NewAnalysisPage() {
   const previewUrlRef = useRef<string | null>(null)
 
   /*
-   * Phase 9 real dataset catalogue integration.
+   * Phase 10 catalogue synchronisation.
+   *
+   * The backend catalogue is now the source of truth for
+   * available dataset IDs.
+   *
+   * If a previously selected dataset is no longer returned by
+   * GET /api/datasets, remove only that stale selection.
+   *
+   * Valid selections are preserved.
+   */
+  const reconcileDatasetSelection = useCallback(
+    (
+      catalogue: Awaited<ReturnType<typeof getDatasets>>,
+    ) => {
+      const availableDatasetIds = new Set(
+        catalogue.map((dataset) => dataset.id),
+      )
+
+      const validDatasetIds = datasetIds.filter(
+        (datasetId) =>
+          availableDatasetIds.has(datasetId),
+      )
+
+      if (validDatasetIds.length !== datasetIds.length) {
+        setDatasetIds(validDatasetIds)
+      }
+    },
+    [datasetIds, setDatasetIds],
+  )
+
+  /*
+   * Load the real dataset catalogue.
    *
    * Catalogue:
    * GET /api/datasets
@@ -117,10 +149,24 @@ function NewAnalysisPage() {
    * execution remain mocked until their backend services
    * are available.
    */
+  const loadDatasets = useCallback(async () => {
+    setDatasetsError(null)
+
+    const catalogue = await getDatasets()
+
+    setDatasets(catalogue)
+    reconcileDatasetSelection(catalogue)
+
+    return catalogue
+  }, [reconcileDatasetSelection])
+
+  /*
+   * Initial catalogue load.
+   */
   useEffect(() => {
     let isActive = true
 
-    async function loadDatasets() {
+    async function loadInitialDatasets() {
       setIsDatasetsLoading(true)
       setDatasetsError(null)
 
@@ -132,6 +178,7 @@ function NewAnalysisPage() {
         }
 
         setDatasets(catalogue)
+        reconcileDatasetSelection(catalogue)
       } catch (error) {
         if (!isActive) {
           return
@@ -151,24 +198,20 @@ function NewAnalysisPage() {
       }
     }
 
-    void loadDatasets()
+    void loadInitialDatasets()
 
     return () => {
       isActive = false
     }
-  }, [])
+  }, [reconcileDatasetSelection])
 
   /*
    * After a real dataset upload succeeds, reload the
-   * catalogue from the backend.
+   * catalogue from the backend and reconcile the selection.
    */
   async function handleDatasetUploadSuccess() {
-    setDatasetsError(null)
-
     try {
-      const catalogue = await getDatasets()
-
-      setDatasets(catalogue)
+      await loadDatasets()
     } catch (error) {
       setDatasetsError(
         error instanceof Error
