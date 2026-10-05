@@ -32,9 +32,11 @@ Completed
 - Saved the best development checkpoint using validation macro F1.
 - Implemented the AI prediction result contract in ai/inference/contracts.py.
 - Added and successfully ran 12 prediction contract tests.
+- Implemented the development model exporter and CPU model loader.
+- Created development bundle dev-20261005-v1 and verified CPU loading.
 
 Current Task
-Prepare the development model bundle and saved-model loader for backend integration. Coordinate database class-ID mapping and unset-threshold handling with Person 2.
+Implement ai/inference/predictor.py to classify one photograph using the exported development bundle and return the agreed PredictionResult.
 
 Important Files
 - ai/config/classes.json
@@ -92,6 +94,13 @@ Validation Results
 - AI prediction contract tests (2026-10-05): PASS — 12/12.
 - Contract checks covered class labels, confidence values, review rules, fallback behaviour and JSON serialization.
 - Full backend integration: not yet tested.
+- Export preflight (2026-10-05): PASS on the epoch-7 checkpoint.
+- Bundle integrity and CPU loading (2026-10-05): PASS.
+- Bundle version: dev-20261005-v1.
+- Bundle location: ai/models/bundles/dev-20261005-v1/.
+- Loaded model output shape: (1, 4), CPU.
+- Bundle confidence threshold: unselected; human review required.
+- Photograph prediction check: not yet performed.
 
 Next Tasks
 1. Create photograph folders for the agreed classes.

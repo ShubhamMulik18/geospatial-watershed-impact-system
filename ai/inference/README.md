@@ -4,8 +4,11 @@ AI Inference Handoff
 Status
 ------
 
-The result contract is implemented in contracts.py. The model bundle exporter,
-loader, predictor and backend prediction endpoint are still future work.
+The result contract is implemented in contracts.py. A development bundle exporter
+is available in ai/training/export_model.py, with a CPU loader in model_loader.py.
+The photograph predictor and backend prediction endpoint are still future work.
+Software checks do not establish that an export has run successfully on your Mac;
+record your actual command results in ai/STATUS.md after running them.
 
 This is the proposed AI-side handoff for Person 2. It was compared with backend
 commit c663c78 and AI commit e5e974a on 2026-10-05. The two database decisions below
@@ -111,3 +114,79 @@ From the project root:
 
 The tests use synthetic values. They do not load your checkpoint, use field photos,
 train a model, download weights, select a real threshold or measure model accuracy.
+
+Export a development bundle
+---------------------------
+
+The exporter needs best.pt and the adjacent metadata.json from the same completed
+training run, plus the exact classes.json used during training. It checks their
+agreement, loads the saved weights on CPU and retains the original class order.
+It does not read the photograph dataset or private manifest. It writes a raw CPU
+state_dict, not a pickled model object. Source training files are preserved.
+
+For the first recorded training run, start with this read-only check:
+
+```bash
+.venv-ai/bin/python -m ai.training.export_model --checkpoint ai/models/training_runs/dev-20261004T094431Z-bns0tl6u/best.pt --model-version dev-20261005-v1 --check
+```
+
+After the check passes, create the bundle:
+
+```bash
+.venv-ai/bin/python -m ai.training.export_model --checkpoint ai/models/training_runs/dev-20261004T094431Z-bns0tl6u/best.pt --model-version dev-20261005-v1 --write
+```
+
+The output folder is ai/models/bundles/dev-20261005-v1/. It contains:
+
+| File | Purpose |
+|---|---|
+| model.pt | Exported CPU weights, with a SHA-256 recorded in metadata.json |
+| classes.json | Exact public class definitions used for training |
+| metadata.json | Ordered trained classes, preprocessing, review policy and provenance |
+| MODEL_CARD.md | Recorded data counts, validation scores and development limitations |
+
+Export verifies a reload and compares its synthetic-input logits with the source
+checkpoint. An existing bundle folder is never overwritten; use a new version
+name for a new export. Interrupted or failed writes remove only their new folder.
+Model files remain under the ignored ai/models/ directory. Share the complete
+bundle through an agreed team file location; ordinary Git commits contain code
+and documentation, not these model files or private photographs.
+
+This first bundle deliberately retains threshold=None and forces human review.
+Its explicit development policy is to show the top candidate for review while
+the threshold is unset. The future predictor must implement that policy. The
+database's non-null threshold requirement is still an open Person 2 decision.
+Neither export nor loading selects a threshold or performs held-out evaluation.
+
+Check the saved bundle on CPU:
+
+```bash
+.venv-ai/bin/python -m ai.inference.model_loader --bundle ai/models/bundles/dev-20261005-v1 --check
+```
+
+The importable interface for the future predictor is:
+
+```python
+from ai.inference.model_loader import load_model
+
+loaded = load_model(bundle_dir, device="cpu")
+# loaded.model returns raw logits. Use the existing preprocess_image() and
+# torch.inference_mode() in the future predictor, then build PredictionResult.
+```
+
+The loader uses only bundle files and shared inference code; it does not depend
+on training folders, private data or paths from the original Mac. It requires
+torch, torchvision and Pillow from the AI environment. Package installation and
+a test on Person 2's machine are still needed before backend integration.
+
+Export/loading tests
+--------------------
+
+```bash
+.venv-ai/bin/python -m unittest discover -s ai/tests -p 'test_export_model.py' -v
+```
+
+These tests create one temporary checkpoint using the actual trainer, random
+initialization and synthetic tensors for a single epoch. They exercise export,
+CPU reload, preserved outputs, class order, checksums and failure handling. All
+fixture files are temporary. This does not retrain or evaluate your saved model.
