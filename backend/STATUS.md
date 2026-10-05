@@ -300,19 +300,41 @@ Verification:
 
 ## Current Milestone
 
-### Chat 06 — Phase 4 Analysis Validation / Creation
+### Chat 07 — Adapter / Worker / Artifact Delivery
 
 **Status:** COMPLETED
 
-The backend now supports structurally validated analysis creation and persistence.
+The backend now supports the adapter boundary, database-backed analysis worker lifecycle, and scoped artifact delivery required for the next processing stage.
 
-The next backend phase is the adapter/worker stage:
+Completed in Chat 07:
 
-* Scientific dataset compatibility validation.
-* AI prediction integration.
-* Geospatial processing integration.
-* Database-backed analysis worker lifecycle.
-* Processing limits and scientific validation.
+* Added the AI adapter contract and explicit development mock adapter.
+* Added the geospatial adapter contract and explicit development mock adapter.
+* Added worker configuration for polling, leases, heartbeats, and artifact storage.
+* Added database-backed analysis job claiming with row locking.
+* Added worker lease recovery for interrupted queued/running analyses.
+* Added analysis heartbeat renewal.
+* Added `AnalysisWorker` orchestration for AI and geospatial adapter execution.
+* Added standalone worker entry point.
+* Added artifact repository with analysis-scoped artifact lookup.
+* Added secure artifact storage path validation.
+* Added artifact service for controlled artifact retrieval.
+* Added `GET /api/analyses/{analysis_id}/artifacts/{artifact_id}`.
+* Added artifact cross-analysis isolation tests.
+* Verified the backend can run the worker against the database.
+* Verified the development adapters without introducing production scientific or AI implementations.
+
+Chat 07 intentionally does not claim completion of:
+
+* Production AI inference.
+* Production AI class mapping from Person 3.
+* Real scientific raster processing from Person 4.
+* Persistence of final scientific `AnalysisResult` fields into analysis result/warning records.
+* Final production artifact registration from scientific processing.
+* Report generation.
+* Production worker deployment infrastructure.
+
+The next backend phase should align the worker and adapter boundaries with the authoritative Person 3 AI contract and Person 4 geospatial contract before implementing production processing behavior.
 
 ---
 
@@ -333,7 +355,7 @@ pytest -q
 Expected:
 
 ```text
-117 passed
+136 passed
 ```
 
 ### Alembic migration state
@@ -376,22 +398,25 @@ backend
 
 ## Explicitly Not Implemented Yet
 
-The following remain outside the completed Chat 06 scope:
+The following remain outside the completed Chat 07 scope:
 
 * Photo retrieval endpoints.
-* Real AI inference integration.
-* Dataset scientific compatibility validation.
-* Dataset ingestion/processing adapters.
-* Analysis worker processing.
-* Real geospatial processing.
-* Analysis result generation.
-* Analysis artifact generation.
+* Production AI inference integration.
+* Production AI class mapping and model bundle integration from Person 3.
+* Production scientific dataset compatibility validation.
+* Real NDVI/water and other scientific raster processing.
+* Persistence of final scientific analysis results and warnings from `AnalysisResult`.
+* Final production artifact registration from scientific processing.
 * Report generation.
 * Frontend integration.
 * Production deployment.
 
-These should only be implemented when required by the corresponding project phase and authoritative blueprint.
+The following are implemented at the adapter/worker boundary but remain development/mock behavior:
 
+* AI prediction through the development AI adapter.
+* Geospatial processing through the development geospatial adapter.
+* Database-backed analysis worker lifecycle.
+* Artifact storage, repository, service, and download API.
 ---
 
 ## Important Project Rules
@@ -412,31 +437,66 @@ These should only be implemented when required by the corresponding project phas
 
 ## Latest Known Git State
 
-Chat 06 implementation has been completed and verified locally.
+Chat 07 implementation has been completed, verified locally, committed, and pushed to `origin/backend`.
 
-Current staged Chat 06 changes:
+Chat 07 implementation commit:
 
-```text
-8 files changed
-878 insertions
-3 deletions
-```
+79dbe83 feat(backend): add analysis worker adapters and artifact delivery
+
+Chat 07 handoff commit:
+
+cfacfb7 docs(backend): add Chat 07 handoff
 
 Current verification:
 
-```text
-117 passed
+136 passed
 No new upgrade operations detected.
-```
 
-Chat 06 changes are staged but **not committed yet**.
+The `backend` branch is synchronized with `origin/backend`.
 
-Next steps:
+The Chat 07 handoff is stored at:
 
-1. Finalize `STATUS.md`.
-2. Create `CHAT_06_HANDOFF.md`.
-3. Run final verification.
-4. Run `git diff --check`.
-5. Commit Chat 06 changes.
-6. Push `backend` to `origin/backend`.
-7. Record the final commit and Chat 07 starting point.
+backend/CHAT_07_HANDOFF.md
+
+### Chat 07 Completed Scope
+
+* AI adapter contract and development mock.
+* Geospatial adapter contract and development mock.
+* Database-backed analysis worker lifecycle.
+* Worker claiming, leases, heartbeat, and expired-job recovery.
+* Standalone worker entry point.
+* Artifact repository and analysis-scoped lookup.
+* Secure artifact storage path validation.
+* Artifact service.
+* Artifact download API.
+* Artifact API isolation tests.
+* Worker and adapter tests.
+* Full backend verification.
+
+### Chat 07 Important Limitations
+
+* The development AI adapter is not production AI inference.
+* Production AI class mapping/model integration must come from Person 3.
+* The development geospatial adapter does not perform scientific raster analysis.
+* Production scientific processing must come from Person 4.
+* `AnalysisWorker` currently executes the geospatial adapter but does not yet persist the returned `AnalysisResult` into `analysis_results`, `analysis_warnings`, or final artifact records.
+* Final production artifact registration remains pending integration with the scientific processing implementation.
+* No production worker infrastructure such as Celery or Redis should be introduced.
+
+### Next Backend Starting Point
+
+The next phase should begin from the committed Chat 07 state:
+
+cfacfb7
+
+Before implementing production processing behavior:
+
+1. Read `Watershed_Master_Blueprint.md`.
+2. Read `STATUS.md`.
+3. Read `CHAT_07_HANDOFF.md`.
+4. Inspect the actual repository state.
+5. Confirm the authoritative Person 3 AI contract and Person 4 geospatial contract available at that point.
+6. Design the next integration phase before modifying implementation.
+7. Preserve all existing API contracts and tests.
+8. Run the full test suite before committing.
+9. Update `STATUS.md` and create the next chat handoff before the final commit.
