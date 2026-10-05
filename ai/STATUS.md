@@ -30,9 +30,11 @@ Completed
 - Saved a development split and verified all three dataset loaders.
 - Implemented the development training script and completed the first 10-epoch training run.
 - Saved the best development checkpoint using validation macro F1.
+- Implemented the AI prediction result contract in ai/inference/contracts.py.
+- Added and successfully ran 12 prediction contract tests.
 
 Current Task
-Collect more verified photographs from different physical sites, especially contour trenches, before assigning dataset splits.
+Prepare the development model bundle and saved-model loader for backend integration. Coordinate database class-ID mapping and unset-threshold handling with Person 2.
 
 Important Files
 - ai/config/classes.json
@@ -87,6 +89,9 @@ Validation Results
 - Held-out test evaluation: not performed.
 - Confidence threshold: not selected.
 - Development result only; the dataset is too small for reliable accuracy claims.
+- AI prediction contract tests (2026-10-05): PASS — 12/12.
+- Contract checks covered class labels, confidence values, review rules, fallback behaviour and JSON serialization.
+- Full backend integration: not yet tested.
 
 Next Tasks
 1. Create photograph folders for the agreed classes.
