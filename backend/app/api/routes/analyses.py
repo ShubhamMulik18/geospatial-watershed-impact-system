@@ -1,6 +1,10 @@
 from fastapi import APIRouter, Depends, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-
+import uuid
+from pathlib import Path
+from app.core.config import get_settings
+from app.services.artifact_service import ArtifactService
 from app.core.exceptions import AppError
 from app.db.session import get_db
 from app.schemas.analysis import (
@@ -54,3 +58,37 @@ def create_analysis(
     except Exception:
         db.rollback()
         raise
+
+@router.get(
+    "/{analysis_id}/artifacts/{artifact_id}",
+    status_code=status.HTTP_200_OK,
+)
+def download_artifact(
+    analysis_id: str,
+    artifact_id: str,
+    db: Session = Depends(get_db),
+) -> FileResponse:
+    try:
+        analysis_uuid = uuid.UUID(analysis_id)
+        artifact_uuid = uuid.UUID(artifact_id)
+    except ValueError as exc:
+        raise AppError(
+            "Invalid analysis or artifact ID.",
+            status_code=404,
+            code="ARTIFACT_NOT_FOUND",
+        ) from exc
+
+    settings = get_settings()
+
+    path, mime_type, _ = ArtifactService(
+        db=db,
+        storage_root=Path(settings.artifact_storage_root),
+    ).get_artifact_file(
+        analysis_id=analysis_uuid,
+        artifact_id=artifact_uuid,
+    )
+
+    return FileResponse(
+        path=path,
+        media_type=mime_type,
+    )
