@@ -175,6 +175,88 @@ class AnalysisPolygon(SchemaBase):
                 if not -90.0 <= latitude <= 90.0:
                     raise ValueError("Latitude must be between -90 and 90.")
 
+        for ring in value:
+            if len(ring) < 4:
+                raise ValueError(
+                    "Polygon rings must contain at least four positions."
+                )
+
+            if ring[0] != ring[-1]:
+                raise ValueError("Polygon rings must be closed.")
+
+        exterior = value[0]
+
+        def segments_intersect(
+            a: list[float],
+            b: list[float],
+            c: list[float],
+            d: list[float],
+        ) -> bool:
+            def orientation(
+                p: list[float],
+                q: list[float],
+                r: list[float],
+            ) -> float:
+                return (
+                    (q[1] - p[1]) * (r[0] - q[0])
+                    - (q[0] - p[0]) * (r[1] - q[1])
+                )
+
+            def on_segment(
+                p: list[float],
+                q: list[float],
+                r: list[float],
+            ) -> bool:
+                return (
+                    min(p[0], r[0]) <= q[0] <= max(p[0], r[0])
+                    and min(p[1], r[1]) <= q[1] <= max(p[1], r[1])
+                )
+
+            o1 = orientation(a, b, c)
+            o2 = orientation(a, b, d)
+            o3 = orientation(c, d, a)
+            o4 = orientation(c, d, b)
+
+            if (
+                o1 == 0
+                and on_segment(a, c, b)
+                or o2 == 0
+                and on_segment(a, d, b)
+                or o3 == 0
+                and on_segment(c, a, d)
+                or o4 == 0
+                and on_segment(c, b, d)
+            ):
+                return True
+
+            return (
+                (o1 > 0) != (o2 > 0)
+                and (o3 > 0) != (o4 > 0)
+            )
+
+        segments = list(zip(exterior, exterior[1:]))
+
+        for index, (start_a, end_a) in enumerate(segments):
+            for other_index, (start_b, end_b) in enumerate(segments):
+                if other_index <= index + 1:
+                    continue
+
+                if (
+                    index == 0
+                    and other_index == len(segments) - 1
+                ):
+                    continue
+
+                if segments_intersect(
+                    start_a,
+                    end_a,
+                    start_b,
+                    end_b,
+                ):
+                    raise ValueError(
+                        "Polygon exterior ring must not self-intersect."
+                    )
+
         return value
 
 

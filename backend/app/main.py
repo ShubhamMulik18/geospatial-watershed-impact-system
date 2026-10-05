@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.datasets import router as datasets_router
-
+from app.api.routes.analyses import router as analyses_router
 from app.api.routes.photos import router as photos_router
 from app.core.config import get_settings
 from app.core.constants import API_PREFIX, APP_NAME, HEALTH_PATH
@@ -34,6 +34,11 @@ def create_app() -> FastAPI:
 
     app.include_router(
         datasets_router,
+        prefix=API_PREFIX,
+    )
+
+    app.include_router(
+        analyses_router,
         prefix=API_PREFIX,
     )
 

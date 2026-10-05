@@ -83,6 +83,29 @@ def test_analysis_request_rejects_invalid_coordinates():
     with pytest.raises(ValidationError):
         AnalysisRequest(**payload)
 
+def test_analysis_request_rejects_unclosed_polygon():
+    payload = sample_request()
+    payload["polygon"]["coordinates"][0][-1] = [74.24, 16.71]
+
+    with pytest.raises(ValidationError):
+        AnalysisRequest(**payload)
+
+
+def test_analysis_request_rejects_self_intersecting_polygon():
+    payload = sample_request()
+    payload["polygon"]["coordinates"] = [
+        [
+            [74.24, 16.70],
+            [74.25, 16.71],
+            [74.25, 16.70],
+            [74.24, 16.71],
+            [74.24, 16.70],
+        ]
+    ]
+
+    with pytest.raises(ValidationError):
+        AnalysisRequest(**payload)
+
 
 def test_analysis_request_rejects_invalid_indicator():
     payload = sample_request()
