@@ -34,9 +34,11 @@ Completed
 - Added and successfully ran 12 prediction contract tests.
 - Implemented the development model exporter and CPU model loader.
 - Created development bundle dev-20261005-v1 and verified CPU loading.
+- Implemented single-photograph prediction in ai/inference/predictor.py.
+- Passed 14 predictor tests and completed the first photograph prediction.
 
 Current Task
-Implement ai/inference/predictor.py to classify one photograph using the exported development bundle and return the agreed PredictionResult.
+Prepare AI package installation and backend integration with Person 2, including class-ID mapping and unset-threshold handling.
 
 Important Files
 - ai/config/classes.json
@@ -100,7 +102,16 @@ Validation Results
 - Bundle location: ai/models/bundles/dev-20261005-v1/.
 - Loaded model output shape: (1, 4), CPU.
 - Bundle confidence threshold: unselected; human review required.
-- Photograph prediction check: not yet performed.
+- Photograph prediction check: - Predictor tests (2026-10-05): PASS — 14/14.
+- Single-photograph prediction (2026-10-05): PASS — completed on CPU.
+- Photograph: ai/data/processed/farm_pond/farm_pond_0002.png.
+- Photograph split: training.
+- Returned class: farm_pond (Farm Pond), matching the recorded label.
+- Confidence score: 0.4715189039707184.
+- Human verification: required.
+- Confidence threshold: unselected.
+- Prediction model version: dev-20261005-v1.
+- This was a training-photo workflow check; held-out evaluation remains pending.
 
 Next Tasks
 1. Create photograph folders for the agreed classes.

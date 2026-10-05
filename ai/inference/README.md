@@ -6,12 +6,13 @@ Status
 
 The result contract is implemented in contracts.py. A development bundle exporter
 is available in ai/training/export_model.py, with a CPU loader in model_loader.py.
-The photograph predictor and backend prediction endpoint are still future work.
+One-photo prediction is implemented in predictor.py. The backend prediction
+endpoint, persistence adapter and installation on Person 2's machine remain pending.
 Software checks do not establish that an export has run successfully on your Mac;
 record your actual command results in ai/STATUS.md after running them.
 
 This is the proposed AI-side handoff for Person 2. It was compared with backend
-commit c663c78 and AI commit e5e974a on 2026-10-05. The two database decisions below
+commit a42bfae and AI baseline commit dc1d30f on 2026-10-05. The two database decisions below
 remain open; this document does not claim that the teammates have agreed to them.
 
 What each person owns
@@ -47,10 +48,9 @@ in the predictor. The bundle must preserve these labels and the exact trained
 output order: check_dam, farm_pond, percolation_tank, contour_trench. Other/Unknown
 is currently a fallback, not a fifth trained output. Plantation is not included.
 
-The future predictor must validate its result against the bundle's public labels
-using result.validate_labels(labels). The bundle loader must also verify that the
-candidate belongs to the ordered trained classes. Contract string checks alone
-cannot establish class membership or confirm that a model hash matches a file.
+The predictor validates its result against the bundle's public labels using
+result.validate_labels(labels). Its top candidate comes from the loaded model's
+ordered classes, which the loader checks against the bundle's class file.
 
 Review and threshold rules
 --------------------------
@@ -95,6 +95,9 @@ Open database decisions for Person 2
 1. The database uses integer label_id, but the AI uses stable string class IDs.
    Define a permanent public class lookup, including other_unknown, or deliberately
    migrate the column. Do not silently reuse model output positions as database IDs.
+   In backend commit a42bfae, AnalysisService._build_prediction_snapshot currently
+   uses class_id=str(prediction.label_id). Person 2 must use the agreed lookup here
+   too, so snapshots contain IDs such as farm_pond rather than a string such as "1".
 2. The database requires a numeric threshold; the current checkpoint stores None.
    Either support an unset threshold in the database, or explicitly agree and
    record a development-only numeric cutoff. Do not invent a validated cutoff.
@@ -154,7 +157,7 @@ and documentation, not these model files or private photographs.
 
 This first bundle deliberately retains threshold=None and forces human review.
 Its explicit development policy is to show the top candidate for review while
-the threshold is unset. The future predictor must implement that policy. The
+the threshold is unset. predictor.py implements that policy. The
 database's non-null threshold requirement is still an open Person 2 decision.
 Neither export nor loading selects a threshold or performs held-out evaluation.
 
@@ -164,14 +167,14 @@ Check the saved bundle on CPU:
 .venv-ai/bin/python -m ai.inference.model_loader --bundle ai/models/bundles/dev-20261005-v1 --check
 ```
 
-The importable interface for the future predictor is:
+The loader interface used by the predictor is:
 
 ```python
 from ai.inference.model_loader import load_model
 
 loaded = load_model(bundle_dir, device="cpu")
-# loaded.model returns raw logits. Use the existing preprocess_image() and
-# torch.inference_mode() in the future predictor, then build PredictionResult.
+# loaded.model returns raw logits. predictor.py applies preprocess_image(),
+# torch.inference_mode() and softmax, then builds PredictionResult.
 ```
 
 The loader uses only bundle files and shared inference code; it does not depend
@@ -190,3 +193,74 @@ These tests create one temporary checkpoint using the actual trainer, random
 initialization and synthetic tensors for a single epoch. They exercise export,
 CPU reload, preserved outputs, class order, checksums and failure handling. All
 fixture files are temporary. This does not retrain or evaluate your saved model.
+
+Predict one photograph
+----------------------
+
+The callable interface for Person 2 is now implemented:
+
+```python
+from ai.inference.predictor import load_predictor
+
+# Once when the backend starts, using its configured local bundle directory:
+predictor = load_predictor(bundle_dir, device="cpu")
+
+# For each request, after the backend resolves photo_id to a stored photo path:
+result = predictor.predict(image_path=stored_photo_path)
+
+# Add backend-generated IDs to this public subset for PredictionResponse:
+public_fields = result.to_public_fields()
+# result.to_dict() contains internal metadata for the persistence adapter.
+```
+
+Use the returned predictor for subsequent photographs. Calling load_predictor()
+for every request would unnecessarily reload the model. The predictor uses only
+inference modules, not training scripts or the private dataset manifest.
+
+For the first manual check, use the farm-pond photograph previously converted to
+PNG. This photo belongs to the recorded training split; it checks the code path,
+not generalization accuracy. Keep the held-out test set for planned evaluation.
+
+```bash
+.venv-ai/bin/python -m ai.inference.predictor --bundle ai/models/bundles/dev-20261005-v1 --image ai/data/processed/farm_pond/farm_pond_0002.png
+```
+
+The CLI prints the eight-field internal result as JSON. An unset Python threshold
+appears as JSON null. A reminder goes to stderr, leaving stdout usable as JSON.
+No result file is created and neither the photo nor model files are changed.
+
+For this bundle, class_id and top_candidate_class_id are the top intervention
+candidate, predicted_class is its display label, and requires_verification is
+always true. Confidence is an uncalibrated softmax score, not measured accuracy.
+A wrong prediction is possible with this very small training collection.
+
+There is no threshold override argument. The current loader rejects numeric
+thresholds. Numeric-cutoff fallback logic has a synthetic unit test, but using a
+cutoff with a real model needs validation-based selection and an explicit update
+to the bundle format/loader. No unknown-class recognition has been established.
+
+Error handling for Person 2:
+
+- Handle bundle/configuration problems when loading the predictor at startup.
+- Invalid or missing photographs raise ValueError through the shared preprocessor.
+- Unexpected tensor shapes, types or nonfinite model outputs raise RuntimeError.
+- Map exceptions to the backend's existing error response; never store a made-up
+  successful prediction after an error.
+- Keep requires_verification in the public result and immutable analysis snapshot.
+
+The predictor provides no HTTP endpoint, database write, GPS extraction, satellite
+analysis or report generation. Person 2's new analysis route requires an existing
+stored prediction, so its AI adapter and persistence decisions must be completed
+before this code enables that workflow.
+
+Predictor tests
+---------------
+
+```bash
+.venv-ai/bin/python -m unittest discover -s ai/tests -p 'test_predictor.py' -v
+```
+
+These tests use a temporary MobileNetV2 bundle with controlled test weights and
+generated images. They check preprocessing, class order, softmax, model reuse,
+review rules, errors, unchanged model/files and JSON output. They do not train,
+download weights, use field photos or measure watershed classification accuracy.
