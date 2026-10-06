@@ -197,3 +197,132 @@ def test_create_analysis_api_returns_202_and_persists_analysis() -> None:
         )
         db.commit()
         db.close()
+def test_get_analysis_api_returns_persisted_analysis() -> None:
+    db = SessionLocal()
+
+    photo = _make_photo()
+    prediction = _make_prediction(photo)
+
+    dataset_a = _make_dataset(
+        display_name="GET Dataset 2021",
+        acquisition_date=date(2021, 2, 15),
+        sha256="c" * 64,
+    )
+    dataset_b = _make_dataset(
+        display_name="GET Dataset 2026",
+        acquisition_date=date(2026, 2, 17),
+        sha256="d" * 64,
+    )
+
+    analysis_id = None
+
+    try:
+        db.add_all([photo, prediction, dataset_a, dataset_b])
+        db.commit()
+
+        create_response = client.post(
+            "/api/analyses",
+            json={
+                "photo_id": str(photo.id),
+                "polygon": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [74.24, 16.70],
+                            [74.25, 16.70],
+                            [74.25, 16.71],
+                            [74.24, 16.71],
+                            [74.24, 16.70],
+                        ]
+                    ],
+                },
+                "dataset_ids": [str(dataset_a.id), str(dataset_b.id)],
+                "indicators": ["ndvi", "water"],
+            },
+        )
+
+        assert create_response.status_code == 202
+        analysis_id = uuid.UUID(create_response.json()["analysis_id"])
+
+        response = client.get(f"/api/analyses/{analysis_id}")
+
+        assert response.status_code == 200
+
+        body = response.json()
+
+        assert body["schema_version"] == "1.0"
+        assert body["analysis_id"] == str(analysis_id)
+        assert body["status"] == "created"
+        assert body["stage"] == "created"
+        assert body["inputs"]["photo_id"] == str(photo.id)
+        assert body["inputs"]["dataset_ids"] == [
+            str(dataset_a.id),
+            str(dataset_b.id),
+        ]
+        assert body["inputs"]["indicators"] == ["ndvi", "water"]
+        assert body["inputs"]["polygon"] == {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [74.24, 16.70],
+                    [74.25, 16.70],
+                    [74.25, 16.71],
+                    [74.24, 16.71],
+                    [74.24, 16.70],
+                ]
+            ],
+        }
+        assert body["prediction"]["class"] == "Check Dam"
+        assert body["prediction"]["class_id"] == "1"
+        assert body["prediction"]["confidence"] == 0.92
+        assert body["metrics"] is None
+        assert body["series"] == []
+        assert body["comparisons"] == []
+        assert body["layers"] == []
+        assert body["quality"] is None
+        assert body["warnings"] == []
+        assert body["provenance"] is None
+        assert body["report_status"] == "not_requested"
+        assert body["error"] is None
+
+    finally:
+        if db.in_transaction():
+            db.rollback()
+
+        if analysis_id is not None:
+            db.execute(
+                delete(AnalysisDataset).where(
+                    AnalysisDataset.analysis_id == analysis_id
+                )
+            )
+            db.execute(
+                delete(Analysis).where(
+                    Analysis.id == analysis_id
+                )
+            )
+
+        db.execute(
+            delete(Prediction).where(
+                Prediction.id == prediction.id
+            )
+        )
+        db.execute(
+            delete(Photo).where(
+                Photo.id == photo.id
+            )
+        )
+        db.execute(
+            delete(Dataset).where(
+                Dataset.id.in_([dataset_a.id, dataset_b.id])
+            )
+        )
+        db.commit()
+        db.close()
+
+
+def test_get_analysis_api_returns_404_for_unknown_analysis() -> None:
+    response = client.get(f"/api/analyses/{uuid.uuid4()}")
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "NotFoundError"
+    assert response.json()["error"]["message"] == "Analysis not found."

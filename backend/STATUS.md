@@ -2,7 +2,7 @@
 
 ## Module
 
-Person 2 — Backend + Database
+Person 2 â€” Backend + Database
 
 ## Branch
 
@@ -21,7 +21,7 @@ Person 2 — Backend + Database
 
 ## Completed Milestones
 
-### Chat 01 — Repository / Backend Structure Baseline
+### Chat 01 â€” Repository / Backend Structure Baseline
 
 **Status:** COMPLETED
 
@@ -37,7 +37,7 @@ Completed:
 
 ---
 
-### Chat 02 — Phase 0 Canonical Schemas
+### Chat 02 â€” Phase 0 Canonical Schemas
 
 **Status:** COMPLETED
 
@@ -71,7 +71,7 @@ Contract documentation:
 
 ---
 
-### Chat 03 — Phase 1 FastAPI + Database / Migrations
+### Chat 03 â€” Phase 1 FastAPI + Database / Migrations
 
 **Status:** COMPLETED
 
@@ -124,18 +124,18 @@ Completed:
 
 Verification:
 
-* `alembic current` → `e4848f47f4f6 (head)`
-* `alembic check` → `No new upgrade operations detected.`
+* `alembic current` â†’ `e4848f47f4f6 (head)`
+* `alembic check` â†’ `No new upgrade operations detected.`
 * Full test suite at Phase 1 completion: `59 passed`
-* `git diff --check` → no whitespace errors.
+* `git diff --check` â†’ no whitespace errors.
 
 Phase 1 commit:
 
-`c0f25d3` — pushed to `origin/backend`
+`c0f25d3` â€” pushed to `origin/backend`
 
 ---
 
-### Chat 04 — Phase 2 Photo Upload + EXIF
+### Chat 04 â€” Phase 2 Photo Upload + EXIF
 
 **Status:** COMPLETED
 
@@ -178,17 +178,17 @@ Verification:
 
 * Full test suite: `87 passed`
 * PostgreSQL/PostGIS photo persistence test: `1 passed`
-* `alembic check` → `No new upgrade operations detected.`
+* `alembic check` â†’ `No new upgrade operations detected.`
 * Runtime upload directories contain no persisted test files.
 * No Phase 2 migration was required.
 
 Phase 2 commit:
 
-`506747c` — pushed to `origin/backend`
+`506747c` â€” pushed to `origin/backend`
 
 ---
 
-### Chat 05 — Phase 3 Dataset Catalogue
+### Chat 05 â€” Phase 3 Dataset Catalogue
 
 **Status:** COMPLETED
 
@@ -234,13 +234,13 @@ Verification:
 * Dataset API tests: `5 passed`
 * Dataset persistence tests: `3 passed`
 * Dataset catalogue integration tests: `2 passed`
-* `alembic check` → `No new upgrade operations detected.`
+* `alembic check` â†’ `No new upgrade operations detected.`
 * Rasterio installation and GeoTIFF inspection verified successfully.
 * No Phase 3 database migration was required.
 
 ---
 
-### Chat 06 — Phase 4 Analysis Validation / Creation
+### Chat 06 â€” Phase 4 Analysis Validation / Creation
 
 **Status:** COMPLETED
 
@@ -292,15 +292,15 @@ Verification:
 * Analysis API integration test: `1 passed`
 * Analysis service integration tests: `3 passed`
 * Polygon schema validation tests: `17 passed`
-* `alembic check` → `No new upgrade operations detected.`
-* `git diff --check` → no whitespace errors.
+* `alembic check` â†’ `No new upgrade operations detected.`
+* `git diff --check` â†’ no whitespace errors.
 * No Chat 06 database migration was required.
 
 ---
 
 ## Current Milestone
 
-### Chat 07 — Adapter / Worker / Artifact Delivery
+### Chat 07 â€” Adapter / Worker / Artifact Delivery
 
 **Status:** COMPLETED
 
@@ -329,7 +329,6 @@ Chat 07 intentionally does not claim completion of:
 * Production AI inference.
 * Production AI class mapping from Person 3.
 * Real scientific raster processing from Person 4.
-* Persistence of final scientific `AnalysisResult` fields into analysis result/warning records.
 * Final production artifact registration from scientific processing.
 * Report generation.
 * Production worker deployment infrastructure.
@@ -337,6 +336,50 @@ Chat 07 intentionally does not claim completion of:
 The next backend phase should align the worker and adapter boundaries with the authoritative Person 3 AI contract and Person 4 geospatial contract before implementing production processing behavior.
 
 ---
+
+
+### Chat 08 - Analysis Result Persistence / Retrieval
+
+**Status:** COMPLETED
+
+Completed:
+
+* Added persistence of geospatial `AnalysisResult` metrics, series, comparisons, quality, and provenance into `analysis_results`.
+* Added persistence of geospatial warnings into `analysis_warnings`.
+* Updated `AnalysisWorker` to persist successful geospatial analysis results before marking analyses completed.
+* Preserved worker failure handling and existing lease/heartbeat lifecycle behavior.
+* Added `AnalysisService.get_analysis()` for persisted analysis retrieval.
+* Added `GET /api/analyses/{analysis_id}` returning the canonical `AnalysisResponse`.
+* Added reconstruction of the persisted analysis polygon as GeoJSON.
+* Added reconstruction of prediction snapshot, dataset ordering, indicators, result fields, warnings, provenance, and failure error information.
+* Added integration coverage for analysis retrieval.
+* Added integration coverage for unknown analysis IDs returning `404`.
+* Preserved the existing artifact download API and artifact storage boundaries.
+* No database migration was required because the existing `analysis_results` and `analysis_warnings` tables already support this persistence.
+
+Key analysis endpoints:
+
+* `POST /api/analyses`
+* `GET /api/analyses/{analysis_id}`
+* `GET /api/analyses/{analysis_id}/artifacts/{artifact_id}`
+
+Important limitations:
+
+* The development AI adapter is still a mock and is not production AI inference.
+* Production AI class mapping/model integration remains owned by Person 3.
+* The development geospatial adapter is still a mock and does not perform scientific raster analysis.
+* Production scientific processing remains owned by Person 4.
+* Final production artifact registration from scientific processing remains pending the authoritative geospatial artifact descriptors.
+* Report generation remains pending.
+* Production worker deployment infrastructure remains pending.
+
+Verification:
+
+* Analysis API integration tests: `3 passed`
+* Full backend test suite: `138 passed`
+* `git diff --check` - no whitespace errors; only the existing Git LF/CRLF working-copy warning was reported.
+* `python -m py_compile app\api\routes\analyses.py` - passed.
+* No Chat 08 database migration was required.
 
 ## Current Repository Verification
 
@@ -355,7 +398,7 @@ pytest -q
 Expected:
 
 ```text
-136 passed
+138 passed
 ```
 
 ### Alembic migration state
@@ -398,14 +441,14 @@ backend
 
 ## Explicitly Not Implemented Yet
 
-The following remain outside the completed Chat 07 scope:
+The following remain outside the completed Chat 08 scope:
 
 * Photo retrieval endpoints.
 * Production AI inference integration.
 * Production AI class mapping and model bundle integration from Person 3.
 * Production scientific dataset compatibility validation.
 * Real NDVI/water and other scientific raster processing.
-* Persistence of final scientific analysis results and warnings from `AnalysisResult`.
+* Final scientific analysis result and warning persistence at the worker/result boundary is implemented; production scientific result generation remains pending Person 4.
 * Final production artifact registration from scientific processing.
 * Report generation.
 * Frontend integration.
@@ -437,63 +480,38 @@ The following are implemented at the adapter/worker boundary but remain developm
 
 ## Latest Known Git State
 
-Chat 07 implementation has been completed, verified locally, committed, and pushed to `origin/backend`.
+Chat 08 implementation has been completed and verified locally. The working tree still needs the Chat 08 handoff and final commit/push.
 
-Chat 07 implementation commit:
+### Chat 08 Completed Scope
 
-79dbe83 feat(backend): add analysis worker adapters and artifact delivery
+* Geospatial `AnalysisResult` persistence into `analysis_results`.
+* Geospatial warning persistence into `analysis_warnings`.
+* Persisted analysis retrieval through `GET /api/analyses/{analysis_id}`.
+* Polygon reconstruction as GeoJSON.
+* Prediction, dataset ordering, indicators, metrics, series, comparisons, quality, provenance, warnings, and error reconstruction.
+* Existing artifact download API preserved.
+* Full backend verification: `138 passed`.
 
-Chat 07 handoff commit:
+### Chat 08 Important Limitations
 
-cfacfb7 docs(backend): add Chat 07 handoff
-
-Current verification:
-
-136 passed
-No new upgrade operations detected.
-
-The `backend` branch is synchronized with `origin/backend`.
-
-The Chat 07 handoff is stored at:
-
-backend/CHAT_07_HANDOFF.md
-
-### Chat 07 Completed Scope
-
-* AI adapter contract and development mock.
-* Geospatial adapter contract and development mock.
-* Database-backed analysis worker lifecycle.
-* Worker claiming, leases, heartbeat, and expired-job recovery.
-* Standalone worker entry point.
-* Artifact repository and analysis-scoped lookup.
-* Secure artifact storage path validation.
-* Artifact service.
-* Artifact download API.
-* Artifact API isolation tests.
-* Worker and adapter tests.
-* Full backend verification.
-
-### Chat 07 Important Limitations
-
-* The development AI adapter is not production AI inference.
-* Production AI class mapping/model integration must come from Person 3.
-* The development geospatial adapter does not perform scientific raster analysis.
-* Production scientific processing must come from Person 4.
-* `AnalysisWorker` currently executes the geospatial adapter but does not yet persist the returned `AnalysisResult` into `analysis_results`, `analysis_warnings`, or final artifact records.
-* Final production artifact registration remains pending integration with the scientific processing implementation.
-* No production worker infrastructure such as Celery or Redis should be introduced.
+* The development AI adapter is still a mock.
+* Production AI inference and class mapping/model integration remain owned by Person 3.
+* The development geospatial adapter is still a mock.
+* Production scientific raster processing remains owned by Person 4.
+* Final production artifact registration remains pending authoritative geospatial artifact descriptors.
+* Report generation remains pending.
+* Production worker deployment infrastructure remains pending.
+* No production worker infrastructure such as Celery or Redis should be introduced without explicit architectural justification.
 
 ### Next Backend Starting Point
 
-The next phase should begin from the committed Chat 07 state:
-
-cfacfb7
+The next phase should begin from the completed Chat 08 implementation after its handoff is committed and pushed.
 
 Before implementing production processing behavior:
 
 1. Read `Watershed_Master_Blueprint.md`.
 2. Read `STATUS.md`.
-3. Read `CHAT_07_HANDOFF.md`.
+3. Read `CHAT_08_HANDOFF.md`.
 4. Inspect the actual repository state.
 5. Confirm the authoritative Person 3 AI contract and Person 4 geospatial contract available at that point.
 6. Design the next integration phase before modifying implementation.

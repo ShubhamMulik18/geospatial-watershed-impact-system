@@ -25,12 +25,12 @@ class FakeGeospatialAdapter:
         self.called_request = request
         self.called_output_dir = output_dir
         return AnalysisResult(
-            metrics={},
+            metrics={"ndvi_change": 0.12},
             series=[],
             comparisons=[],
             quality={},
-            warnings=[],
-            provenance={},
+            warnings=["Development geospatial adapter warning."],
+            provenance={"adapter": "development-mock-v1"},
             artifacts=[],
         )
 
@@ -64,6 +64,8 @@ def _make_analysis(tmp_path: Path):
     analysis.polygon = "polygon"
     analysis.indicators = ["ndvi"]
     analysis.dataset_links = [dataset_link]
+    analysis.result = None
+    analysis.warnings = []
 
     return analysis
 
@@ -94,6 +96,15 @@ def test_process_job_completes_successfully(tmp_path: Path) -> None:
     assert geospatial_adapter.called_request["datasets"][0]["dataset_id"] == "dataset-001"
     assert geospatial_adapter.called_request["datasets"][0]["sha256"] == "dataset-hash"
 
+    assert analysis.result.schema_version == "1.0"
+    assert analysis.result.result["metrics"] == {"ndvi_change": 0.12}
+    assert analysis.result.pipeline_version == "development-mock-v1"
+    assert len(analysis.warnings) == 1
+    assert analysis.warnings[0].code == "GEOSPATIAL_WARNING"
+    assert analysis.warnings[0].message == "Development geospatial adapter warning."
+    assert analysis.warnings[0].scope == "analysis"
+
+    assert analysis.status == "completed"
     db.commit.assert_called()
 
 

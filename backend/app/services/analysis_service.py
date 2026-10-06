@@ -1,11 +1,15 @@
 import uuid
+from datetime import datetime, timezone
 from geoalchemy2 import WKTElement
 
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import AppError, NotFoundError
+from app.integrations.geospatial.base import AnalysisResult as GeospatialAnalysisResult
 from app.models.analysis import Analysis
 from app.models.analysis_dataset import AnalysisDataset
+from app.models.analysis_result import AnalysisResult
+from app.models.analysis_warning import AnalysisWarning
 from app.models.dataset import Dataset
 from app.models.photo import Photo
 from app.models.prediction import Prediction
@@ -68,6 +72,62 @@ class AnalysisService:
         self.db.flush()
 
         return analysis
+
+    def get_analysis(self, analysis_id: str) -> Analysis:
+        """Load an analysis and its persisted response data."""
+        try:
+            analysis_uuid = uuid.UUID(analysis_id)
+        except ValueError as exc:
+            raise NotFoundError("Analysis not found.") from exc
+
+        analysis = self.db.get(Analysis, analysis_uuid)
+
+        if analysis is None:
+            raise NotFoundError("Analysis not found.")
+
+        return analysis
+
+    def persist_analysis_result(
+        self,
+        analysis: Analysis,
+        result: GeospatialAnalysisResult,
+    ) -> AnalysisResult:
+        """Persist a completed geospatial adapter result and its warnings."""
+        provenance = dict(result.provenance or {})
+        pipeline_version = str(
+            provenance.get("pipeline_version")
+            or provenance.get("adapter")
+            or "unknown"
+        )
+
+        persisted_result = AnalysisResult(
+            analysis_id=analysis.id,
+            schema_version="1.0",
+            result={
+                "metrics": result.metrics,
+                "series": result.series,
+                "comparisons": result.comparisons,
+                "quality": result.quality,
+                "provenance": provenance,
+            },
+            pipeline_version=pipeline_version,
+            completed_at=datetime.now(timezone.utc),
+        )
+
+        analysis.result = persisted_result
+
+        analysis.warnings.clear()
+        for warning in result.warnings:
+            analysis.warnings.append(
+                AnalysisWarning(
+                    code="GEOSPATIAL_WARNING",
+                    message=str(warning),
+                    scope="analysis",
+                )
+            )
+
+        self.db.flush()
+        return persisted_result
 
     def _get_photo(self, photo_id: str) -> Photo:
         try:

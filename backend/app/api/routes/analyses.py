@@ -1,16 +1,27 @@
+from pathlib import Path
+import json
+import uuid
+
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import FileResponse
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
-import uuid
-from pathlib import Path
+
 from app.core.config import get_settings
 from app.services.artifact_service import ArtifactService
 from app.core.exceptions import AppError
 from app.db.session import get_db
 from app.schemas.analysis import (
+    AnalysisError,
     AnalysisInputs,
+    AnalysisMetrics,
+    AnalysisProvenance,
+    AnalysisQuality,
     AnalysisRequest,
     AnalysisResponse,
+    AnalysisSeriesPoint,
+    AnalysisComparison,
+    PredictionSnapshot,
 )
 from app.services.analysis_service import AnalysisService
 
@@ -58,6 +69,109 @@ def create_analysis(
     except Exception:
         db.rollback()
         raise
+
+
+@router.get(
+    "/{analysis_id}",
+    response_model=AnalysisResponse,
+    status_code=status.HTTP_200_OK,
+)
+def get_analysis(
+    analysis_id: str,
+    db: Session = Depends(get_db),
+) -> AnalysisResponse:
+    try:
+        analysis = AnalysisService(db=db).get_analysis(analysis_id)
+
+        polygon_geojson = db.execute(
+            select(func.ST_AsGeoJSON(analysis.polygon))
+        ).scalar_one()
+
+        polygon = json.loads(polygon_geojson)
+
+        result_data = analysis.result.result if analysis.result else {}
+
+        prediction = None
+        if analysis.prediction_snapshot:
+            prediction = PredictionSnapshot.model_validate(
+                analysis.prediction_snapshot
+            )
+
+        metrics = (
+            AnalysisMetrics.model_validate(result_data["metrics"])
+            if result_data.get("metrics") is not None
+            else None
+        )
+
+        series = [
+            AnalysisSeriesPoint.model_validate(item)
+            for item in result_data.get("series", [])
+        ]
+
+        comparisons = [
+            AnalysisComparison.model_validate(item)
+            for item in result_data.get("comparisons", [])
+        ]
+
+        quality = (
+            AnalysisQuality.model_validate(result_data["quality"])
+            if result_data.get("quality") is not None
+            else None
+        )
+
+        provenance = (
+            AnalysisProvenance.model_validate(result_data["provenance"])
+            if result_data.get("provenance") is not None
+            else None
+        )
+
+        error = None
+        if analysis.error:
+            error = AnalysisError(
+                code="ANALYSIS_FAILED",
+                message=analysis.error,
+            )
+
+        return AnalysisResponse(
+            schema_version=analysis.result.schema_version
+            if analysis.result
+            else "1.0",
+            analysis_id=str(analysis.id),
+            status=analysis.status,
+            stage=analysis.status,
+            inputs=AnalysisInputs(
+                photo_id=str(analysis.photo_id),
+                polygon=polygon,
+                dataset_ids=[
+                    str(link.dataset_id)
+                    for link in sorted(
+                        analysis.dataset_links,
+                        key=lambda link: link.sequence,
+                    )
+                ],
+                indicators=analysis.indicators,
+            ),
+            prediction=prediction,
+            metrics=metrics,
+            series=series,
+            comparisons=comparisons,
+            layers=[],
+            quality=quality,
+            warnings=[
+                warning.message
+                for warning in analysis.warnings
+            ],
+            provenance=provenance,
+            report_status="not_requested",
+            error=error,
+        )
+    except AppError:
+        db.rollback()
+        raise
+    except Exception:
+        db.rollback()
+        raise
+
 
 @router.get(
     "/{analysis_id}/artifacts/{artifact_id}",

@@ -9,6 +9,7 @@ from app.integrations.ai.base import AIAdapter
 from app.integrations.geospatial.adapter import DevelopmentGeospatialAdapter
 from app.integrations.geospatial.base import GeospatialAdapter
 from app.repositories.analysis_worker_repository import AnalysisWorkerRepository
+from app.services.analysis_service import AnalysisService
 
 
 class AnalysisWorker:
@@ -154,10 +155,15 @@ class AnalysisWorker:
 
             progress_callback = self._build_progress_callback(analysis)
 
-            self.geospatial_adapter.run_analysis(
+            result = self.geospatial_adapter.run_analysis(
                 request=request,
                 output_dir=output_dir,
                 progress_callback=progress_callback,
+            )
+
+            AnalysisService(db=self.db).persist_analysis_result(
+                analysis=analysis,
+                result=result,
             )
 
             analysis.status = "completed"
