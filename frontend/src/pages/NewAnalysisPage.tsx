@@ -1,5 +1,4 @@
 import {
-  useCallback,
   useEffect,
   useRef,
   useState,
@@ -10,7 +9,6 @@ import AnalysisControls, {
   type AnalysisMode,
 } from '../components/analysis/AnalysisControls'
 import DatasetSelector from '../components/analysis/DatasetSelector'
-import DatasetUploader from '../components/analysis/DatasetUploader'
 import IndicatorSelector from '../components/analysis/IndicatorSelector'
 import ProcessingStatus, {
   type ProcessingState,
@@ -107,67 +105,11 @@ function NewAnalysisPage() {
   const previewUrlRef = useRef<string | null>(null)
 
   /*
-   * Phase 11 catalogue synchronisation.
+   * Load the real dataset catalogue when the page opens.
    *
-   * The backend catalogue is the source of truth for
-   * available dataset IDs and their real metadata.
-   *
-   * If a selected dataset disappears from the catalogue,
-   * remove the stale ID and keep selected dataset metadata
-   * synchronized with the remaining valid IDs.
-   */
-  const reconcileDatasetSelection = useCallback(
-    (
-      catalogue: Awaited<ReturnType<typeof getDatasets>>,
-    ) => {
-      const availableDatasetIds = new Set(
-        catalogue.map((dataset) => dataset.id),
-      )
-
-      const validDatasetIds = datasetIds.filter(
-        (datasetId) =>
-          availableDatasetIds.has(datasetId),
-      )
-
-      const validSelectedDatasets = catalogue.filter(
-        (dataset) =>
-          validDatasetIds.includes(dataset.id),
-      )
-
-      setSelectedDatasets(validSelectedDatasets)
-
-      if (validDatasetIds.length !== datasetIds.length) {
-        setDatasetIds(validDatasetIds)
-      }
-    },
-    [
-      datasetIds,
-      setDatasetIds,
-      setSelectedDatasets,
-    ],
-  )
-
-  /*
-   * Reload the real dataset catalogue after a successful
-   * upload and reconcile the existing selection.
-   */
-  const loadDatasets = useCallback(async () => {
-    setDatasetsError(null)
-
-    const catalogue = await getDatasets()
-
-    setDatasets(catalogue)
-    reconcileDatasetSelection(catalogue)
-
-    return catalogue
-  }, [reconcileDatasetSelection])
-
-  /*
-   * Initial catalogue load.
-   *
-   * This effect intentionally runs only once when the page
-   * mounts. Dataset selection changes must not trigger
-   * repeated GET /api/datasets requests.
+   * Normal users do not upload satellite datasets from this
+   * workflow. Prepared datasets are made available through
+   * the backend catalogue and selected here for comparison.
    */
   useEffect(() => {
     let isActive = true
@@ -211,29 +153,60 @@ function NewAnalysisPage() {
   }, [])
 
   /*
-   * After a real dataset upload succeeds, reload the
-   * catalogue from the backend and reconcile the selection.
+   * Keep the current analysis selection synchronized with
+   * the real backend catalogue.
+   *
+   * This effect does not reload the catalogue. It only
+   * removes stale dataset IDs and stores real metadata for
+   * valid selections.
    */
-  async function handleDatasetUploadSuccess() {
-    try {
-      await loadDatasets()
-    } catch (error) {
-      setDatasetsError(
-        error instanceof Error
-          ? error.message
-          : 'The dataset was uploaded, but the catalogue could not be refreshed.',
-      )
+  useEffect(() => {
+    if (isDatasetsLoading || datasetsError) {
+      return
     }
-  }
+
+    const availableDatasetIds = new Set(
+      datasets.map((dataset) => dataset.id),
+    )
+
+    const validDatasetIds = datasetIds.filter(
+      (datasetId) =>
+        availableDatasetIds.has(datasetId),
+    )
+
+    const validSelectedDatasets = datasets.filter(
+      (dataset) =>
+        validDatasetIds.includes(dataset.id),
+    )
+
+    setSelectedDatasets(validSelectedDatasets)
+
+    const selectionChanged =
+      validDatasetIds.length !== datasetIds.length ||
+      validDatasetIds.some(
+        (datasetId, index) =>
+          datasetId !== datasetIds[index],
+      )
+
+    if (selectionChanged) {
+      setDatasetIds(validDatasetIds)
+    }
+  }, [
+    datasets,
+    datasetIds,
+    datasetsError,
+    isDatasetsLoading,
+    setDatasetIds,
+    setSelectedDatasets,
+  ])
 
   /*
-   * Store both the selected IDs and the corresponding real
-   * backend dataset metadata.
+   * Store both the selected catalogue IDs and their real
+   * backend metadata.
    *
    * Dataset IDs remain the authoritative selection used by
-   * the workflow. The metadata is retained so the Results
-   * page can display the actual selected dataset names,
-   * dates, resolution and other catalogue information.
+   * the workflow. Metadata is retained so the Results page
+   * can display the actual selected dataset information.
    */
   function handleDatasetSelectionChange(
     nextDatasetIds: string[],
@@ -282,7 +255,7 @@ function NewAnalysisPage() {
 
     /*
      * Clear previous photo-dependent state while the
-     * newly selected photo is uploaded.
+     * newly selected photo is being uploaded.
      */
     setPhoto(null, null)
 
@@ -320,7 +293,8 @@ function NewAnalysisPage() {
       )
 
       /*
-       * AI inference remains mocked.
+       * AI inference remains mocked until Person 3's
+       * production inference service is available.
        */
       setIsPredictionLoading(true)
 
@@ -565,12 +539,14 @@ function NewAnalysisPage() {
 
         <div className="mt-5 rounded-xl border border-sky-500/20 bg-sky-500/5 px-4 py-3">
           <p className="text-sm leading-6 text-sky-200/80">
-            Field photos, dataset catalogue records, and
-            GeoTIFF dataset uploads are connected to the real
-            backend. AI prediction, indicator processing,
-            analysis execution, and results remain in
-            demonstration mode until their backend
-            integrations are available.
+            Field photos and dataset catalogue records are
+            connected to the real backend. Satellite datasets
+            are prepared and catalogued separately, so users
+            only need to select the comparison datasets
+            required for this analysis. AI prediction,
+            indicator processing, analysis execution, and
+            results remain in demonstration mode until their
+            backend integrations are available.
           </p>
         </div>
       </section>
@@ -602,7 +578,7 @@ function NewAnalysisPage() {
           </p>
 
           <p className="mt-1 text-sm font-semibold text-emerald-200">
-            Datasets
+            Comparison Datasets
           </p>
         </div>
 
@@ -688,22 +664,21 @@ function NewAnalysisPage() {
           </p>
 
           <h2 className="mt-1 text-2xl font-semibold text-white">
-            Configure Analysis Data
+            Select Analysis Data
           </h2>
 
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-            Dataset catalogue records and GeoTIFF uploads are
-            connected to the backend. Indicator selection and
-            analysis execution remain in demonstration mode
-            until their backend services are available.
+            Select at least two compatible datasets from the
+            prepared satellite-data catalogue. Dataset
+            preparation and catalogue management are handled
+            separately from the normal analysis workflow.
+            Indicator selection and analysis execution remain
+            in demonstration mode until their backend services
+            are available.
           </p>
         </div>
 
         <div className="space-y-6">
-          <DatasetUploader
-            onUploadSuccess={handleDatasetUploadSuccess}
-          />
-
           {isDatasetsLoading ? (
             <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
               <div className="flex items-center gap-3">
@@ -784,9 +759,10 @@ function NewAnalysisPage() {
             </h2>
 
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-              The button becomes available after the photo
-              upload, confirmed polygon, dataset, indicator,
-              and comparison-mode requirements are satisfied.
+              The button becomes available after the field
+              photo upload, confirmed study area, comparison
+              dataset, indicator, and comparison-mode
+              requirements are satisfied.
             </p>
 
             {analysisId && (

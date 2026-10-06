@@ -53,7 +53,7 @@ describe('DatasetSelector', () => {
     ).toBeInTheDocument()
 
     expect(
-      screen.getByText('Select at least 2 more compatible datasets.'),
+      screen.getByText('Select at least 2 compatible datasets.'),
     ).toBeInTheDocument()
   })
 
@@ -121,6 +121,24 @@ describe('DatasetSelector', () => {
     ).toBeInTheDocument()
   })
 
+  it('shows one remaining dataset when one dataset is selected', () => {
+    render(
+      <DatasetSelector
+        datasets={[compatibleDataset, secondDataset]}
+        selectedDatasetIds={['dataset-1']}
+        onSelectionChange={vi.fn()}
+      />,
+    )
+
+    expect(
+      screen.getByText('1 selected'),
+    ).toBeInTheDocument()
+
+    expect(
+      screen.getByText('Select 1 more compatible dataset.'),
+    ).toBeInTheDocument()
+  })
+
   it('shows that the minimum requirement is satisfied with two datasets', () => {
     render(
       <DatasetSelector
@@ -130,7 +148,9 @@ describe('DatasetSelector', () => {
       />,
     )
 
-    expect(screen.getByText('2 selected')).toBeInTheDocument()
+    expect(
+      screen.getByText('2 selected'),
+    ).toBeInTheDocument()
 
     expect(
       screen.getByText('Minimum dataset requirement satisfied.'),

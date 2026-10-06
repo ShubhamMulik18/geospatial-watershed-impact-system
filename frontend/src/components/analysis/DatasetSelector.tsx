@@ -211,9 +211,9 @@ function DatasetSelector({
           >
             {minimumReached
               ? 'Minimum dataset requirement satisfied.'
-              : `Select at least ${2 - selectedCount} more compatible ${
-                  2 - selectedCount === 1 ? 'dataset' : 'datasets'
-                }.`}
+              : selectedCount === 0
+                ? 'Select at least 2 compatible datasets.'
+                : 'Select 1 more compatible dataset.'}
           </p>
         </div>
       </div>
