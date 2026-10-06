@@ -36,15 +36,24 @@ Completed
 - Created development bundle dev-20261005-v1 and verified CPU loading.
 - Implemented single-photograph prediction in ai/inference/predictor.py.
 - Passed 14 predictor tests and completed the first photograph prediction.
+- Prepared the AI/backend handoff against AI 6fe036e and backend 07a331f.
+- Added inference-only package metadata and verified two package isolation tests locally.
 
 Current Task
-Prepare AI package installation and backend integration with Person 2, including class-ID mapping and unset-threshold handling.
+Hand off the confirmed eight-field AI result and installation files to Person 2. Coordinate database class IDs and nullable threshold handling, then test the complete backend flow.
 
 Important Files
 - ai/config/classes.json
 - ai/data/README.md
 - ai/.gitignore
 - ai/STATUS.md
+- ai/inference/predictor.py
+- ai/inference/contracts.py
+- ai/inference/model_loader.py
+- ai/inference/BACKEND_HANDOFF.md
+- ai/pyproject.toml
+- ai/MANIFEST.in
+- ai/tests/test_inference_package.py
 
 Validation Results
 - Latest dataset validation date: 2026-10-04.
@@ -102,7 +111,7 @@ Validation Results
 - Bundle location: ai/models/bundles/dev-20261005-v1/.
 - Loaded model output shape: (1, 4), CPU.
 - Bundle confidence threshold: unselected; human review required.
-- Photograph prediction check: - Predictor tests (2026-10-05): PASS — 14/14.
+- Predictor tests (2026-10-05): PASS — 14/14.
 - Single-photograph prediction (2026-10-05): PASS — completed on CPU.
 - Photograph: ai/data/processed/farm_pond/farm_pond_0002.png.
 - Photograph split: training.
@@ -112,12 +121,29 @@ Validation Results
 - Confidence threshold: unselected.
 - Prediction model version: dev-20261005-v1.
 - This was a training-photo workflow check; held-out evaluation remains pending.
+- Local handoff checks (2026-10-06): PASS — 12 contract, 15 export/loader and 14 predictor tests.
+- Local inference package checks (2026-10-06): PASS — 2/2; installed outside the repository without training files or model downloads.
+- Package archive checks: no training scripts, datasets, private manifests or saved model weights included.
+- Local check environment: Python 3.12.14, PyTorch 2.14.1+cpu, torchvision 0.29.1+cpu, Pillow 12.3.0. These are separate from the Mac results above.
+- Actual backend PredictionResponse at 07a331f: four class projections accepted; three internal-only fields rejected. Schema check only.
+- Package version: 0.1.0.dev1; separate from model bundle version dev-20261005-v1.
+- Installation on Person 2's machine: not yet tested.
+- AI installation and handoff files: prepared and verified on Mac.
+- Mac verification date: 2026-10-06.
+- Installed AI package import: PASS.
+- Mac AI test suite: PASS — 43/43.
+- Contract tests: 12/12 passed.
+- Export and loader tests: 15/15 passed.
+- Predictor tests: 14/14 passed.
+- Package tests: 2/2 passed.
+- Export cleanup test: resolved-path lookup corrected and verified on Mac.
 
 Next Tasks
-1. Create photograph folders for the agreed classes.
-2. Create the dataset manifest template.
-3. Collect photographs with verified labels and sources.
-4. Record image details and physical site identifiers.
+1. Review and commit the AI-only installation and handoff files on branch ai.
+2. Agree the class-ID database lookup and support for threshold=None with Person 2; Person 2 owns backend changes.
+3. Share the complete dev-20261005-v1 bundle through the agreed model-file location and check it on Person 2's machine.
+4. Test stored photo -> AI result -> prediction persistence -> analysis creation with Person 2.
+5. Continue verified photo collection, then train/evaluate a larger dataset and select any confidence threshold using validation data.
 
 Reminder
 Update this file after each meaningful work session.

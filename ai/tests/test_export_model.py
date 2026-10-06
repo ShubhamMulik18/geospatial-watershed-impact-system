@@ -224,7 +224,7 @@ class ExportModelTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Simulated reload failure"):
                 export_model.write_bundle(self.destination, files, sources, logits)
         self.assertFalse(self.destination.exists())
-        self.assertEqual(sources[self.checkpoint], self.checkpoint.read_bytes())
+        self.assertEqual(sources[self.checkpoint.resolve()], self.checkpoint.read_bytes())
 
     def test_inputs_changed_after_check_are_rejected_before_writing(self):
         files, sources, logits = self.prepare()

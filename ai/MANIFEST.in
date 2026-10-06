@@ -1,0 +1,11 @@
+include inference/README.md
+include inference/BACKEND_HANDOFF.md
+prune config
+prune data
+prune models
+prune training
+prune evaluation
+prune tests
+prune build
+prune dist
+global-exclude __pycache__ *.py[cod] *.pt *.pth *.onnx *.ckpt

@@ -1,6 +1,11 @@
 AI Inference Handoff
 ====================
 
+For the source-verified integration handoff and installation instructions, see
+[BACKEND_HANDOFF.md](BACKEND_HANDOFF.md), reviewed against AI 6fe036e and backend
+07a331f on 2026-10-06. That document distinguishes confirmed AI behavior from the
+backend decisions still requiring coordination.
+
 Status
 ------
 
@@ -98,9 +103,11 @@ Open database decisions for Person 2
    In backend commit a42bfae, AnalysisService._build_prediction_snapshot currently
    uses class_id=str(prediction.label_id). Person 2 must use the agreed lookup here
    too, so snapshots contain IDs such as farm_pond rather than a string such as "1".
-2. The database requires a numeric threshold; the current checkpoint stores None.
-   Either support an unset threshold in the database, or explicitly agree and
-   record a development-only numeric cutoff. Do not invent a validated cutoff.
+2. The database requires a numeric threshold; the current bundle stores None.
+   The proposed minimal change is a nullable threshold column and migration owned
+   by Person 2, preserving None as SQL NULL. No cutoff should be invented: the
+   current bundle loader rejects numeric thresholds. This database change remains
+   a coordination decision, not an implemented change.
 
 Other database mappings are predicted_class -> predicted_label,
 requires_verification -> review_flag and top_candidate_class_id -> top_candidate.
@@ -180,7 +187,8 @@ loaded = load_model(bundle_dir, device="cpu")
 The loader uses only bundle files and shared inference code; it does not depend
 on training folders, private data or paths from the original Mac. It requires
 torch, torchvision and Pillow from the AI environment. Package installation and
-a test on Person 2's machine are still needed before backend integration.
+a test on Person 2's machine are described in BACKEND_HANDOFF.md; that machine's
+installation and full backend integration still need to be checked.
 
 Export/loading tests
 --------------------
