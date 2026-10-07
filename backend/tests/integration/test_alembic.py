@@ -14,7 +14,7 @@ def test_alembic_configuration_and_head() -> None:
     heads = script.get_heads()
 
     assert len(heads) == 1
-    assert heads[0] == "e4848f47f4f6"
+    assert heads[0] == "31ab98d5eac4"
 
 
 def test_initial_migration_contains_postgis_setup() -> None:

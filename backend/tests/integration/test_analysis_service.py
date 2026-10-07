@@ -74,10 +74,10 @@ def _make_prediction(photo: Photo) -> Prediction:
         photo_id=photo.id,
         model_version="intervention-mobilenetv2-v1",
         model_hash="test-model-hash",
-        label_id=1,
+        class_id="check_dam",
         predicted_label="Check Dam",
         confidence=0.92,
-        top_candidate="Check Dam",
+        top_candidate_class_id="check_dam",
         threshold=0.5,
         review_flag=False,
     )
@@ -154,7 +154,7 @@ def test_analysis_persists_prediction_and_dataset_snapshots() -> None:
 
         assert persisted.prediction_snapshot == {
             "class": "Check Dam",
-            "class_id": "1",
+            "class_id": "check_dam",
             "confidence": 0.92,
             "requires_verification": False,
             "model_version": "intervention-mobilenetv2-v1",

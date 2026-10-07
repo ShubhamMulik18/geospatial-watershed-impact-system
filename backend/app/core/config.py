@@ -13,6 +13,8 @@ class Settings(BaseSettings):
 
     dataset_storage_root: str = "uploads/datasets"
     artifact_storage_root: str = "artifacts"
+    ai_bundle_dir: str = "ai/models/bundles/dev-20261005-v1"
+    ai_device: str = "cpu"
     max_dataset_size_bytes: int = 1024 * 1024 * 1024
     max_processing_pixels: int = 2_000_000
     allowed_dataset_extensions: list[str] = [".tif", ".tiff"]

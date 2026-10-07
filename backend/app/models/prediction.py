@@ -2,14 +2,16 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, func
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
 if TYPE_CHECKING:
     from app.models.analysis import Analysis
     from app.models.photo import Photo
+
 
 class Prediction(Base):
     __tablename__ = "predictions"
@@ -28,11 +30,17 @@ class Prediction(Base):
 
     model_version: Mapped[str] = mapped_column(String(128), nullable=False)
     model_hash: Mapped[str] = mapped_column(String(128), nullable=False)
-    label_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    class_id: Mapped[str] = mapped_column(String(64), nullable=False)
     predicted_label: Mapped[str] = mapped_column(String(256), nullable=False)
     confidence: Mapped[float] = mapped_column(Float, nullable=False)
-    top_candidate: Mapped[str | None] = mapped_column(String(256), nullable=True)
-    threshold: Mapped[float] = mapped_column(Float, nullable=False)
+    top_candidate_class_id: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+    )
+    threshold: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True,
+    )
     review_flag: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     created_at: Mapped[datetime] = mapped_column(

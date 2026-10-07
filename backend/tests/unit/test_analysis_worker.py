@@ -7,15 +7,6 @@ from app.integrations.geospatial.base import AnalysisResult
 from app.workers.analysis_worker import AnalysisWorker
 
 
-class FakeAIAdapter:
-    def __init__(self) -> None:
-        self.called_with: Path | None = None
-
-    def predict(self, photo_path: Path):
-        self.called_with = photo_path
-        return MagicMock()
-
-
 class FakeGeospatialAdapter:
     def __init__(self) -> None:
         self.called_request = None
@@ -73,13 +64,11 @@ def _make_analysis(tmp_path: Path):
 def test_process_job_completes_successfully(tmp_path: Path) -> None:
     db = MagicMock()
     repository = MagicMock()
-    ai_adapter = FakeAIAdapter()
     geospatial_adapter = FakeGeospatialAdapter()
 
     worker = AnalysisWorker(
         db=db,
         repository=repository,
-        ai_adapter=ai_adapter,
         geospatial_adapter=geospatial_adapter,
     )
 
@@ -89,7 +78,6 @@ def test_process_job_completes_successfully(tmp_path: Path) -> None:
 
     assert analysis.status == "completed"
     assert analysis.error is None
-    assert ai_adapter.called_with == tmp_path / "photo.jpg"
 
     assert geospatial_adapter.called_request["analysis_id"] == "analysis-001"
     assert geospatial_adapter.called_request["indicators"] == ["ndvi"]
@@ -115,7 +103,6 @@ def test_process_job_marks_failed_on_processing_error(tmp_path: Path) -> None:
     worker = AnalysisWorker(
         db=db,
         repository=repository,
-        ai_adapter=FakeAIAdapter(),
         geospatial_adapter=FailingGeospatialAdapter(),
     )
 
@@ -129,6 +116,7 @@ def test_process_job_marks_failed_on_processing_error(tmp_path: Path) -> None:
     db.rollback.assert_called_once()
     db.commit.assert_called()
 
+
 def test_recover_expired_jobs_commits_when_jobs_recovered() -> None:
     db = MagicMock()
     repository = MagicMock()
@@ -137,7 +125,6 @@ def test_recover_expired_jobs_commits_when_jobs_recovered() -> None:
     worker = AnalysisWorker(
         db=db,
         repository=repository,
-        ai_adapter=FakeAIAdapter(),
         geospatial_adapter=FakeGeospatialAdapter(),
     )
 
@@ -146,6 +133,7 @@ def test_recover_expired_jobs_commits_when_jobs_recovered() -> None:
     assert recovered == 2
     repository.recover_expired_analyses.assert_called_once_with(db=db)
     db.commit.assert_called_once()
+
 
 def test_run_once_returns_false_when_no_job_is_available() -> None:
     db = MagicMock()
@@ -156,7 +144,6 @@ def test_run_once_returns_false_when_no_job_is_available() -> None:
     worker = AnalysisWorker(
         db=db,
         repository=repository,
-        ai_adapter=FakeAIAdapter(),
         geospatial_adapter=FakeGeospatialAdapter(),
     )
 
@@ -166,18 +153,17 @@ def test_run_once_returns_false_when_no_job_is_available() -> None:
     repository.recover_expired_analyses.assert_called_once_with(db=db)
     repository.claim_next_analysis.assert_called_once()
 
+
 def test_run_once_processes_claimed_job(tmp_path: Path) -> None:
     db = MagicMock()
     repository = MagicMock()
     repository.recover_expired_analyses.return_value = 0
 
-    ai_adapter = FakeAIAdapter()
     geospatial_adapter = FakeGeospatialAdapter()
 
     worker = AnalysisWorker(
         db=db,
         repository=repository,
-        ai_adapter=ai_adapter,
         geospatial_adapter=geospatial_adapter,
     )
 
@@ -189,7 +175,7 @@ def test_run_once_processes_claimed_job(tmp_path: Path) -> None:
     assert analysis.status == "completed"
     repository.recover_expired_analyses.assert_called_once_with(db=db)
     repository.claim_next_analysis.assert_called_once()
-    assert ai_adapter.called_with == tmp_path / "photo.jpg"
+
 
 def test_renew_job_lease_commits_when_renewed() -> None:
     db = MagicMock()
@@ -199,7 +185,6 @@ def test_renew_job_lease_commits_when_renewed() -> None:
     worker = AnalysisWorker(
         db=db,
         repository=repository,
-        ai_adapter=FakeAIAdapter(),
         geospatial_adapter=FakeGeospatialAdapter(),
     )
 
@@ -216,6 +201,7 @@ def test_renew_job_lease_commits_when_renewed() -> None:
     )
     db.commit.assert_called_once()
 
+
 def test_progress_callback_renews_lease_after_heartbeat_interval(
     tmp_path: Path,
     monkeypatch,
@@ -223,7 +209,6 @@ def test_progress_callback_renews_lease_after_heartbeat_interval(
     worker = AnalysisWorker(
         db=MagicMock(),
         repository=MagicMock(),
-        ai_adapter=FakeAIAdapter(),
         geospatial_adapter=FakeGeospatialAdapter(),
     )
 

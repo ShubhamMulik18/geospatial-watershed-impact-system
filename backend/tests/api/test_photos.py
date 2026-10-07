@@ -203,3 +203,78 @@ def test_upload_photo_returns_exif_gps_and_capture_date(tmp_path) -> None:
     assert data["capture_date"] == "2026-09-15"
     assert data["exif_status"] == "available"
     assert data["warnings"] == []
+def test_create_prediction_returns_canonical_response() -> None:
+    from unittest.mock import MagicMock, patch
+    import uuid
+
+    from app.api.routes.photos import get_ai_adapter
+    from app.integrations.ai.base import PredictionResult
+
+    client, db = _client_with_mock_db()
+
+    photo_id = uuid.uuid4()
+    prediction = MagicMock()
+    prediction.id = uuid.uuid4()
+    prediction.photo_id = photo_id
+    prediction.class_id = "check_dam"
+    prediction.predicted_label = "Check Dam"
+    prediction.confidence = 0.91
+    prediction.review_flag = False
+    prediction.model_version = "test-model-v1"
+    prediction.model_hash = "a" * 64
+    prediction.top_candidate_class_id = "check_dam"
+    prediction.threshold = 0.80
+
+    adapter = MagicMock()
+    adapter.predict.return_value = PredictionResult(
+        class_id="check_dam",
+        predicted_class="Check Dam",
+        confidence=0.91,
+        requires_verification=False,
+        top_candidate_class_id="check_dam",
+        threshold=0.80,
+        model_version="test-model-v1",
+        model_hash="a" * 64,
+    )
+
+    app.dependency_overrides[get_ai_adapter] = lambda: adapter
+
+    try:
+        with patch(
+            "app.api.routes.photos.PredictionService.create_prediction",
+            return_value=prediction,
+        ) as create_prediction:
+            response = client.post(
+                f"/api/photos/{photo_id}/prediction",
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 201
+
+    data = response.json()
+
+    assert set(data) == {
+        "prediction_id",
+        "photo_id",
+        "class_id",
+        "predicted_class",
+        "confidence",
+        "requires_verification",
+        "model_version",
+    }
+
+    assert data["prediction_id"] == str(prediction.id)
+    assert data["photo_id"] == str(photo_id)
+    assert data["class_id"] == "check_dam"
+    assert data["predicted_class"] == "Check Dam"
+    assert data["confidence"] == 0.91
+    assert data["requires_verification"] is False
+    assert data["model_version"] == "test-model-v1"
+
+    assert "model_hash" not in data
+    assert "top_candidate_class_id" not in data
+    assert "threshold" not in data
+
+    create_prediction.assert_called_once_with(str(photo_id))
+    db.commit.assert_called_once()

@@ -9,8 +9,10 @@ class PredictionResult:
     predicted_class: str
     confidence: float
     requires_verification: bool
+    top_candidate_class_id: str
+    threshold: float | None
     model_version: str
-    model_hash: str | None = None
+    model_hash: str
 
 
 class AIAdapter(ABC):

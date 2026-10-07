@@ -221,7 +221,7 @@ class AnalysisService:
     ) -> dict:
         return PredictionSnapshot(
             class_name=prediction.predicted_label,
-            class_id=str(prediction.label_id),
+            class_id=prediction.class_id,
             confidence=prediction.confidence,
             requires_verification=prediction.review_flag,
             model_version=prediction.model_version,

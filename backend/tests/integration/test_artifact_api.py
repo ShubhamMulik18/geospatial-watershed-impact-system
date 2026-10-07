@@ -34,10 +34,10 @@ def _create_analysis(db, suffix: str) -> Analysis:
         photo_id=photo.id,
         model_version="test-model-v1",
         model_hash="test-model-hash",
-        label_id=1,
+        class_id="check_dam",
         predicted_label="Check Dam",
         confidence=0.92,
-        top_candidate="Check Dam",
+        top_candidate_class_id="check_dam",
         threshold=0.5,
         review_flag=False,
     )

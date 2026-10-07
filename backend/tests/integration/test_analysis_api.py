@@ -76,10 +76,10 @@ def _make_prediction(photo: Photo) -> Prediction:
         photo_id=photo.id,
         model_version="intervention-mobilenetv2-v1",
         model_hash="test-model-hash",
-        label_id=1,
+        class_id="check_dam",
         predicted_label="Check Dam",
         confidence=0.92,
-        top_candidate="Check Dam",
+        top_candidate_class_id="check_dam",
         threshold=0.5,
         review_flag=False,
     )
@@ -273,7 +273,7 @@ def test_get_analysis_api_returns_persisted_analysis() -> None:
             ],
         }
         assert body["prediction"]["class"] == "Check Dam"
-        assert body["prediction"]["class_id"] == "1"
+        assert body["prediction"]["class_id"] == "check_dam"
         assert body["prediction"]["confidence"] == 0.92
         assert body["metrics"] is None
         assert body["series"] == []

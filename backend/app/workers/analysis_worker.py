@@ -4,8 +4,6 @@ import time
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.integrations.ai.adapter import DevelopmentAIAdapter
-from app.integrations.ai.base import AIAdapter
 from app.integrations.geospatial.adapter import DevelopmentGeospatialAdapter
 from app.integrations.geospatial.base import GeospatialAdapter
 from app.repositories.analysis_worker_repository import AnalysisWorkerRepository
@@ -19,14 +17,12 @@ class AnalysisWorker:
         self,
         db: Session,
         repository: AnalysisWorkerRepository | None = None,
-        ai_adapter: AIAdapter | None = None,
         geospatial_adapter: GeospatialAdapter | None = None,
     ) -> None:
         settings = get_settings()
 
         self.db = db
         self.repository = repository or AnalysisWorkerRepository()
-        self.ai_adapter = ai_adapter or DevelopmentAIAdapter()
         self.geospatial_adapter = (
             geospatial_adapter or DevelopmentGeospatialAdapter()
         )
@@ -110,29 +106,10 @@ class AnalysisWorker:
         analysis.status = "running"
         self.db.commit()
 
-    @staticmethod
-    def _resolve_photo_path(safe_path: str) -> Path:
-        """Resolve a persisted photo path and require the file to exist."""
-        photo_path = Path(safe_path).resolve()
-
-        if not photo_path.is_file():
-            raise FileNotFoundError(
-                f"Stored analysis photo is missing: {safe_path}"
-            )
-
-        return photo_path
-
-    def run_prediction(self, analysis):
-        """Run AI prediction for the analysis photo."""
-        photo_path = self._resolve_photo_path(analysis.photo.safe_path)
-        return self.ai_adapter.predict(photo_path)
-
     def process_job(self, analysis) -> None:
-        """Process one claimed analysis job through the adapter pipeline."""
+        """Process one claimed analysis through the geospatial adapter."""
         try:
             self.start_job(analysis)
-
-            self.run_prediction(analysis)
 
             output_dir = self.artifact_storage_root / str(analysis.id)
 

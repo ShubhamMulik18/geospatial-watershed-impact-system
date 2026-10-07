@@ -15,6 +15,8 @@ class DevelopmentAIAdapter(AIAdapter):
             predicted_class="Other/Unknown",
             confidence=0.0,
             requires_verification=True,
+            top_candidate_class_id="check_dam",
+            threshold=None,
             model_version="development-mock-v1",
-            model_hash=None,
+            model_hash="c9be1e9db3b66570b508644e9c88efbb0ca50a4f2d9a7efd7ae4e30302964c9b",
         )
