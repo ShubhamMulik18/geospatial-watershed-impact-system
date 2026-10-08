@@ -1,8 +1,8 @@
-# Backend Status
+﻿# Backend Status
 
 ## Module
 
-Person 2 â€” Backend + Database
+Person 2 — Backend + Database
 
 ## Branch
 
@@ -21,7 +21,7 @@ Person 2 â€” Backend + Database
 
 ## Completed Milestones
 
-### Chat 01 â€” Repository / Backend Structure Baseline
+### Chat 01 — Repository / Backend Structure Baseline
 
 **Status:** COMPLETED
 
@@ -37,7 +37,7 @@ Completed:
 
 ---
 
-### Chat 02 â€” Phase 0 Canonical Schemas
+### Chat 02 — Phase 0 Canonical Schemas
 
 **Status:** COMPLETED
 
@@ -71,7 +71,7 @@ Contract documentation:
 
 ---
 
-### Chat 03 â€” Phase 1 FastAPI + Database / Migrations
+### Chat 03 — Phase 1 FastAPI + Database / Migrations
 
 **Status:** COMPLETED
 
@@ -124,18 +124,18 @@ Completed:
 
 Verification:
 
-* `alembic current` â†’ `e4848f47f4f6 (head)`
-* `alembic check` â†’ `No new upgrade operations detected.`
+* `alembic current` at `e4848f47f4f6 (head)`
+* `alembic check` at `No new upgrade operations detected.`
 * Full test suite at Phase 1 completion: `59 passed`
-* `git diff --check` â†’ no whitespace errors.
+* `git diff --check` at no whitespace errors.
 
 Phase 1 commit:
 
-`c0f25d3` â€” pushed to `origin/backend`
+`c0f25d3` pushed to `origin/backend`
 
 ---
 
-### Chat 04 â€” Phase 2 Photo Upload + EXIF
+### Chat 04 — Phase 2 Photo Upload + EXIF
 
 **Status:** COMPLETED
 
@@ -184,11 +184,11 @@ Verification:
 
 Phase 2 commit:
 
-`506747c` â€” pushed to `origin/backend`
+`506747c` pushed to `origin/backend`
 
 ---
 
-### Chat 05 â€” Phase 3 Dataset Catalogue
+### Chat 05 — Phase 3 Dataset Catalogue
 
 **Status:** COMPLETED
 
@@ -240,7 +240,7 @@ Verification:
 
 ---
 
-### Chat 06 â€” Phase 4 Analysis Validation / Creation
+### Chat 06 — Phase 4 Analysis Validation / Creation
 
 **Status:** COMPLETED
 
@@ -298,9 +298,7 @@ Verification:
 
 ---
 
-## Current Milestone
-
-### Chat 07 â€” Adapter / Worker / Artifact Delivery
+### Chat 07 — Adapter / Worker / Artifact Delivery
 
 **Status:** COMPLETED
 
@@ -338,7 +336,7 @@ The next backend phase should align the worker and adapter boundaries with the a
 ---
 
 
-### Chat 08 - Analysis Result Persistence / Retrieval
+### Chat 08 — Analysis Result Persistence / Retrieval
 
 **Status:** COMPLETED
 
@@ -381,48 +379,101 @@ Verification:
 * `python -m py_compile app\api\routes\analyses.py` - passed.
 * No Chat 08 database migration was required.
 
+---
+
+### Chat 09 — Person 3 AI Integration / Real Prediction Verification
+
+**Status:** COMPLETED
+
+The backend now integrates the authoritative Person 3 AI prediction contract through the production AI adapter and has been verified against the real development model bundle.
+
+Completed in Chat 09:
+
+* Aligned the backend `PredictionResult` contract with the authoritative Person 3 AI contract.
+* Added persistence for the complete internal prediction contract.
+* Added migration `31ab98d5eac4_align_predictions_with_ai_class_contract.py`.
+* Added `ProductionAIAdapter` integration with `ai.inference.predictor.load_predictor`.
+* Preserved the development AI adapter as the default when `APP_ENV=development`.
+* Verified the Person 3 model bundle `dev-20261005-v1`.
+* Confirmed the frozen AI classes:
+  * `check_dam`
+  * `farm_pond`
+  * `percolation_tank`
+  * `contour_trench`
+  * `other_unknown`
+* Confirmed that `plantation` is not part of the AI class contract.
+* Preserved the seven-field public prediction response while keeping internal model metadata private.
+* Preserved the existing analysis prediction snapshot contract.
+* Fixed photo-upload transaction persistence so a successful upload is committed before a separate prediction request.
+* Verified real photo upload, database persistence, separate prediction request, real model inference, prediction persistence, and the public prediction response.
+
+Real-model verification example:
+
+* `class_id`: `farm_pond`
+* `predicted_class`: `Farm Pond`
+* `confidence`: `0.5462548136711121`
+* `requires_verification`: `true`
+* `model_version`: `dev-20261005-v1`
+
+AI verification notes:
+
+* The verification used the Person 3 development model bundle with `APP_ENV=production` and `AI_BUNDLE_DIR` pointing to `dev-20261005-v1`.
+* The development bundle has no selected confidence threshold, so the example prediction requires human verification.
+* The real-photo check verifies integration and persistence only; it does **not** measure or establish model accuracy.
+* The repository `.env` remains unchanged with `APP_ENV=development`, so normal development startup continues to use the development adapter.
+* The Windows Rasterio/PROJ environment workaround was session-only and was not added as permanent project configuration.
+* Production scientific raster processing remains outside this milestone and is owned by Person 4.
+
+---
+
+## Current Milestone
+
+**Status:** PLANNING — next implementation milestone not started.
+
+The next milestone is to inspect and confirm the authoritative Person 4 geospatial integration contract, then design the next backend integration phase before implementation.
+
+Before implementation:
+
+* Read `Watershed_Master_Blueprint.md`, `STATUS.md`, and `CHAT_09_HANDOFF.md`.
+* Inspect the actual repository and Git state.
+* Confirm the current Person 4 geospatial contract and any related integration requirements.
+* Agree on the implementation scope before modifying code.
+* Preserve the existing API contracts, database boundaries, and tests.
+* Do not introduce Celery, Redis, Kafka, or other worker infrastructure without explicit architectural justification.
+
+---
+
 ## Current Repository Verification
 
-Run from:
+### Full backend test suite
 
-```text
-backend/
-```
-
-### Full test suite
+Run from the repository root. In the current Windows environment, set the session-level Rasterio/PROJ path before running the tests:
 
 ```powershell
+$env:PROJ_LIB = "D:\geospatial-watershed-impact-system\backend\.venv\Lib\site-packages\rasterio\proj_data"
 pytest -q
 ```
 
-Expected:
+Latest verified result:
 
 ```text
-138 passed
+144 passed in 4.51s
 ```
 
+The `PROJ_LIB` assignment is a PowerShell-session workaround; it is not a permanent project configuration change.
+
 ### Alembic migration state
+
+Run from `backend/`:
 
 ```powershell
 alembic current
 ```
 
-Expected:
+Latest verified result:
 
 ```text
-e4848f47f4f6 (head)
-```
-
-### Alembic schema drift check
-
-```powershell
-alembic check
-```
-
-Expected:
-
-```text
-No new upgrade operations detected.
+31ab98d5eac4 (head)
 ```
 
 ### Current branch
@@ -437,29 +488,38 @@ Expected:
 backend
 ```
 
+### Whitespace verification
+
+```powershell
+git diff --check
+```
+
+Expected: no output when the working diff has no whitespace errors.
+
 ---
 
 ## Explicitly Not Implemented Yet
 
-The following remain outside the completed Chat 08 scope:
+The following remain pending after Chat 09:
 
 * Photo retrieval endpoints.
-* Production AI inference integration.
-* Production AI class mapping and model bundle integration from Person 3.
 * Production scientific dataset compatibility validation.
-* Real NDVI/water and other scientific raster processing.
-* Final scientific analysis result and warning persistence at the worker/result boundary is implemented; production scientific result generation remains pending Person 4.
-* Final production artifact registration from scientific processing.
+* Real NDVI/water and other scientific raster processing, owned by Person 4.
+* Final production artifact registration from scientific processing and authoritative geospatial artifact descriptors.
 * Report generation.
 * Frontend integration.
 * Production deployment.
+* Accuracy validation and selection of an appropriate confidence threshold for the development AI model.
 
-The following are implemented at the adapter/worker boundary but remain development/mock behavior:
+The following are implemented at the adapter/worker boundary but remain development/mock behavior unless explicitly configured otherwise:
 
-* AI prediction through the development AI adapter.
-* Geospatial processing through the development geospatial adapter.
+* AI prediction through the development AI adapter when `APP_ENV=development`.
+* Geospatial processing through the development geospatial adapter; it does not perform scientific raster analysis.
 * Database-backed analysis worker lifecycle.
-* Artifact storage, repository, service, and download API.
+* Artifact storage, repository, service, and download API. Final artifact registration from scientific processing remains pending.
+
+The real-model integration check does not establish model accuracy. The current development model's predictions require human verification.
+
 ---
 
 ## Important Project Rules
@@ -480,41 +540,45 @@ The following are implemented at the adapter/worker boundary but remain developm
 
 ## Latest Known Git State
 
-Chat 08 implementation has been completed and verified locally. The working tree still needs the Chat 08 handoff and final commit/push.
+The Chat 09 AI integration and real-model verification have been completed locally. The photo-upload transaction fix, updated `STATUS.md`, and `CHAT_09_HANDOFF.md` must be reviewed together before the final commit and push.
 
-### Chat 08 Completed Scope
+* Working branch: `backend`
+* Last known committed backend revision before the current uncommitted changes: `6073683`
+* Latest verified full test suite: `144 passed in 4.51s`
+* Latest verified Alembic revision: `31ab98d5eac4 (head)`
+* Real-model integration was verified with `dev-20261005-v1`.
+* The model bundle is local/ignored and must not be committed.
+* The repository `.env` remains configured for development mode.
+* The current documentation and code changes are not considered committed until Git status and the staged diff have been checked and the commit has been pushed.
 
-* Geospatial `AnalysisResult` persistence into `analysis_results`.
-* Geospatial warning persistence into `analysis_warnings`.
-* Persisted analysis retrieval through `GET /api/analyses/{analysis_id}`.
-* Polygon reconstruction as GeoJSON.
-* Prediction, dataset ordering, indicators, metrics, series, comparisons, quality, provenance, warnings, and error reconstruction.
-* Existing artifact download API preserved.
-* Full backend verification: `138 passed`.
+### Chat 09 Completed Scope
 
-### Chat 08 Important Limitations
+* Person 3 prediction contract alignment and internal prediction persistence.
+* `ProductionAIAdapter` integration with the Person 3 inference loader.
+* Frozen five-class AI contract confirmed; `plantation` excluded.
+* Photo upload transaction commit/rollback fix.
+* Real photo upload → separate prediction request → real model inference → database persistence → public response verified.
+* Existing public prediction response and analysis prediction snapshot preserved.
 
-* The development AI adapter is still a mock.
-* Production AI inference and class mapping/model integration remain owned by Person 3.
-* The development geospatial adapter is still a mock.
-* Production scientific raster processing remains owned by Person 4.
-* Final production artifact registration remains pending authoritative geospatial artifact descriptors.
-* Report generation remains pending.
-* Production worker deployment infrastructure remains pending.
-* No production worker infrastructure such as Celery or Redis should be introduced without explicit architectural justification.
+### Chat 09 Important Limitations
+
+* The development model bundle has not been accuracy-validated.
+* No confidence threshold has been selected; predictions require human verification.
+* The development geospatial adapter remains a mock and does not perform scientific raster analysis.
+* Scientific raster processing and dataset compatibility remain owned by Person 4 and are pending.
+* Final production artifact registration from scientific processing remains pending.
+* Report generation, frontend integration, and production deployment remain pending.
+* No production worker infrastructure such as Celery or Redis has been introduced.
 
 ### Next Backend Starting Point
 
-The next phase should begin from the completed Chat 08 implementation after its handoff is committed and pushed.
-
-Before implementing production processing behavior:
-
 1. Read `Watershed_Master_Blueprint.md`.
 2. Read `STATUS.md`.
-3. Read `CHAT_08_HANDOFF.md`.
-4. Inspect the actual repository state.
-5. Confirm the authoritative Person 3 AI contract and Person 4 geospatial contract available at that point.
-6. Design the next integration phase before modifying implementation.
-7. Preserve all existing API contracts and tests.
-8. Run the full test suite before committing.
-9. Update `STATUS.md` and create the next chat handoff before the final commit.
+3. Read `CHAT_09_HANDOFF.md`.
+4. Inspect the actual repository state and Git diff.
+5. Confirm the authoritative Person 4 geospatial integration contract.
+6. Design and agree on the next phase before implementation.
+7. Preserve existing API contracts, database boundaries, and tests.
+8. Run focused tests and the full backend test suite before committing.
+9. Review the final staged diff, commit on `backend`, push to `origin/backend`, and verify the working tree is clean.
+

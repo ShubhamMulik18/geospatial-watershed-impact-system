@@ -47,10 +47,16 @@ async def upload_photo(
             original_name=file.filename or "",
             content_type=file.content_type,
         )
+        db.commit()
     except AppError:
+        db.rollback()
         raise
     except ValueError as exc:
+        db.rollback()
         raise AppError(str(exc), status_code=400) from exc
+    except Exception:
+        db.rollback()
+        raise
 
     warnings: list[str] = []
 
