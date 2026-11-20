@@ -313,3 +313,21 @@ class AnalysisWorker:
             analysis.status = "failed"
             analysis.error = str(exc)
             self.db.commit()
+
+
+if __name__ == "__main__":
+    from app.db.session import SessionLocal
+
+    print("Starting Geospatial Watershed Analysis Worker daemon...")
+    print(f"Polling database for pending analysis jobs every {get_settings().worker_poll_interval_seconds}s (Press Ctrl+C to exit)...")
+    db = SessionLocal()
+    worker = AnalysisWorker(db=db)
+    try:
+        while True:
+            processed = worker.run_once()
+            if not processed:
+                time.sleep(worker.poll_interval_seconds)
+    except KeyboardInterrupt:
+        print("\nAnalysis Worker stopped gracefully.")
+    finally:
+        db.close()
