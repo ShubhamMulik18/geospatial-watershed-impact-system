@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 
@@ -13,6 +13,7 @@ class PredictionResult:
     threshold: float | None
     model_version: str
     model_hash: str
+    warnings: list[str] = field(default_factory=list)
 
 
 class AIAdapter(ABC):

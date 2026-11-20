@@ -34,10 +34,16 @@ Thumbs.db
 # =========================
 # Backend runtime data
 # =========================
+uploads/*
+!uploads/.gitkeep
 backend/uploads/photos/*
 backend/uploads/datasets/*
 backend/uploads/reports/*
 backend/uploads/artifacts/*
+artifacts/*
+!artifacts/.gitkeep
+backend/artifacts/*
+!backend/artifacts/.gitkeep
 
 # Keep runtime directories in Git
 !backend/uploads/photos/.gitkeep

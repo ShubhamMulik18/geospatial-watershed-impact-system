@@ -1,5 +1,6 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
+from typing import Any
 from geoalchemy2 import WKTElement
 
 from sqlalchemy.orm import Session
@@ -22,6 +23,16 @@ from app.schemas.analysis import (
 )
 
 
+
+def _sanitize_json_value(val: Any) -> Any:
+    if isinstance(val, (datetime, date)):
+        return val.isoformat()
+    if isinstance(val, dict):
+        return {k: _sanitize_json_value(v) for k, v in val.items()}
+    if isinstance(val, (list, tuple)):
+        return [_sanitize_json_value(v) for v in val]
+    return val
+
 class AnalysisService:
     """Create and persist structurally validated analysis requests."""
 
@@ -32,6 +43,15 @@ class AnalysisService:
         photo = self._get_photo(request.photo_id)
         prediction = self._get_prediction(photo.id)
         datasets = self._get_datasets(request.dataset_ids)
+
+        for d in datasets:
+            if not getattr(d, "acquisition_date", None):
+                raise AppError(
+                    f"Dataset '{d.id}' is missing a valid acquisition date.",
+                    status_code=400,
+                    code="INVALID_DATASET_DATE",
+                )
+        datasets.sort(key=lambda d: d.acquisition_date)
 
         self._validate_indicator_capabilities(
             datasets=datasets,
@@ -100,21 +120,29 @@ class AnalysisService:
             or "unknown"
         )
 
-        persisted_result = AnalysisResult(
-            analysis_id=analysis.id,
-            schema_version="1.0",
-            result={
-                "metrics": result.metrics,
-                "series": result.series,
-                "comparisons": result.comparisons,
-                "quality": result.quality,
-                "provenance": provenance,
-            },
-            pipeline_version=pipeline_version,
-            completed_at=datetime.now(timezone.utc),
-        )
+        sanitized_data = _sanitize_json_value({
+            "metrics": result.metrics,
+            "series": result.series,
+            "comparisons": result.comparisons,
+            "quality": result.quality,
+            "provenance": provenance,
+        })
 
-        analysis.result = persisted_result
+        if analysis.result is not None:
+            analysis.result.schema_version = "1.0"
+            analysis.result.result = sanitized_data
+            analysis.result.pipeline_version = pipeline_version
+            analysis.result.completed_at = datetime.now(timezone.utc)
+            persisted_result = analysis.result
+        else:
+            persisted_result = AnalysisResult(
+                analysis_id=analysis.id,
+                schema_version="1.0",
+                result=sanitized_data,
+                pipeline_version=pipeline_version,
+                completed_at=datetime.now(timezone.utc),
+            )
+            analysis.result = persisted_result
 
         analysis.warnings.clear()
         for warning in result.warnings:
@@ -231,6 +259,7 @@ class AnalysisService:
     def _build_dataset_snapshot(dataset: Dataset) -> dict:
         return {
             "dataset_id": str(dataset.id),
+            "path": dataset.path,
             "display_name": dataset.display_name,
             "acquisition_date": dataset.acquisition_date.isoformat(),
             "year": dataset.year,

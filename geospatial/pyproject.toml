@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "watershed-geospatial"
+version = "0.1.0"
+description = "Geospatial raster processing and environmental indices for watershed analysis"
+requires-python = ">=3.12"
+dependencies = [
+    "rasterio>=1.4",
+    "numpy>=1.26",
+]
+
+[tool.setuptools]
+packages = [
+    "geospatial",
+    "geospatial.analysis",
+    "geospatial.indices",
+    "geospatial.outputs",
+    "geospatial.raster_processing",
+    "geospatial.reports",
+]
+package-dir = {"geospatial" = "."}
+

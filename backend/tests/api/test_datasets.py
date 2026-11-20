@@ -82,7 +82,7 @@ def test_upload_dataset_returns_canonical_response(tmp_path) -> None:
                 },
             )
     finally:
-        app.dependency_overrides.clear()
+        app.dependency_overrides.pop(get_db, None)
 
     assert response.status_code == 201
 
@@ -136,7 +136,7 @@ def test_upload_dataset_rejects_invalid_metadata_json() -> None:
             },
         )
     finally:
-        app.dependency_overrides.clear()
+        app.dependency_overrides.pop(get_db, None)
 
     assert response.status_code == 400
     assert response.json()["error"]["message"] == (
@@ -178,7 +178,7 @@ def test_upload_dataset_requires_acquisition_date(tmp_path) -> None:
                 },
             )
     finally:
-        app.dependency_overrides.clear()
+        app.dependency_overrides.pop(get_db, None)
 
     assert response.status_code == 400
     assert (
@@ -217,7 +217,7 @@ def test_list_datasets_returns_datasets() -> None:
         try:
             response = client.get("/api/datasets")
         finally:
-            app.dependency_overrides.clear()
+            app.dependency_overrides.pop(get_db, None)
 
     assert response.status_code == 200
     assert len(response.json()) == 1
@@ -232,7 +232,7 @@ def test_list_datasets_filters_by_capability() -> None:
         try:
             response = client.get("/api/datasets?capability=water")
         finally:
-            app.dependency_overrides.clear()
+            app.dependency_overrides.pop(get_db, None)
 
     assert response.status_code == 200
     assert response.json() == []

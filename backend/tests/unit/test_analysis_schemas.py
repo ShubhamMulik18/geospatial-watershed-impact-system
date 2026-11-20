@@ -231,3 +231,16 @@ def test_analysis_response_serializes_prediction_class_as_class():
     dumped = response.model_dump(by_alias=True)
 
     assert dumped["prediction"]["class"] == "Check Dam"
+
+def test_analysis_request_accepts_frontend_indicator_aliases():
+    """Verify that frontend indicator labels ('vegetation', 'surface-water') map cleanly to canonical enums."""
+    payload = sample_request()
+    payload["indicators"] = ["vegetation", "surface-water"]
+
+    req = AnalysisRequest(**payload)
+    assert req.indicators == [Indicator.NDVI, Indicator.WATER]
+
+    payload2 = sample_request()
+    payload2["indicators"] = ["vegetation_change", "surface_water"]
+    req2 = AnalysisRequest(**payload2)
+    assert req2.indicators == [Indicator.NDVI, Indicator.WATER]

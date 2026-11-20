@@ -13,17 +13,38 @@ class ProductionAIAdapter(AIAdapter):
         *,
         device: str = "cpu",
     ) -> None:
+        p = Path(bundle_dir)
+        if not p.is_absolute() and not p.exists():
+            repo_root = Path(__file__).resolve().parents[4]
+            if (repo_root / p).exists():
+                p = repo_root / p
+
         from ai.inference.predictor import load_predictor
 
         self._predictor = load_predictor(
-            bundle_dir,
+            p,
             device=device,
         )
 
     def predict(self, photo_path: Path) -> PredictionResult:
+        p = Path(photo_path)
+        if not p.is_absolute() and not p.exists():
+            repo_root = Path(__file__).resolve().parents[4]
+            if (repo_root / p).exists():
+                p = repo_root / p
+
+        if not p.is_file():
+            raise FileNotFoundError(f"Photo file does not exist: {photo_path}")
+
         result: Any = self._predictor.predict(
-            image_path=photo_path,
+            image_path=p,
         )
+
+        warnings: list[str] = []
+        if getattr(result, "requires_verification", False):
+            warnings.append("Human verification required: development model prediction.")
+        if getattr(result, "threshold", None) is None:
+            warnings.append("Confidence threshold is unset; top candidate returned for review.")
 
         return PredictionResult(
             class_id=result.class_id,
@@ -34,4 +55,5 @@ class ProductionAIAdapter(AIAdapter):
             threshold=result.threshold,
             model_version=result.model_version,
             model_hash=result.model_hash,
+            warnings=warnings,
         )

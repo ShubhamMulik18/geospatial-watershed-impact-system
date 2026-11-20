@@ -1,0 +1,62 @@
+# Initial baseline settings for the future ai/training/train.py.
+# The current collection checker and model checker do not read this file.
+# These are starting values, not settings selected by validation results.
+schema_version: "1.0"
+seed: 42
+
+# Resolve every path from the project root, not from the config directory.
+paths:
+  data_dir: ai/data
+  manifest: ai/data/manifests/private/manifest.csv
+  classes: ai/config/classes.json
+  # Each training run must create a new child directory here.
+  output_dir: ai/models/training_runs
+
+# Planning targets only. A separate split script will assign the CSV rows.
+# Group site IDs globally, including sites with photographs of several classes.
+# Keep related photographs together even when the ratios are not exact.
+split:
+  group_by: site_id
+  train_ratio: 0.70
+  validation_ratio: 0.15
+  test_ratio: 0.15
+
+model:
+  architecture: mobilenet_v2
+  pretrained_weights: IMAGENET1K_V2
+  freeze_backbone: true
+  # Validate these IDs against classes.json and pass this same order to every
+  # dataset. Construct the model with train_dataset.class_ids; export that order.
+  # other_unknown remains a public fallback, not a trained class at this stage.
+  class_ids:
+    - check_dam
+    - farm_pond
+    - percolation_tank
+    - contour_trench
+
+preprocessing:
+  # Names the existing, fixed preprocess.py behavior: EXIF orientation, RGB,
+  # resize shorter edge to 232, center crop 224, and ImageNet normalization.
+  # This name is a contract for the future trainer, not a new transform loader.
+  # Reject an unsupported profile; do not silently change preprocessing.
+  # dataset.py adds a 50% horizontal flip only for the training split.
+  profile: mobilenet_v2_imagenet1k_v2
+
+training:
+  epochs: 10
+  batch_size: 4
+  device: cpu
+  num_workers: 0
+  optimizer: adam
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  loss: cross_entropy
+  class_weighting: none
+  checkpoint_metric: validation_macro_f1
+  checkpoint_mode: max
+
+# Future training must require populated hashes and assigned, site-grouped
+# splits. Use only train to learn and validation to select a checkpoint.
+# Keep test for final evaluation; do not choose settings or thresholds on it.
+# A matching seed helps repeat runs but does not guarantee identical results
+# across different hardware or library versions.

@@ -1,4 +1,4 @@
-﻿from functools import lru_cache
+from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -22,6 +22,13 @@ class Settings(BaseSettings):
     worker_poll_interval_seconds: float = 2.0
     worker_lease_seconds: int = 300
     worker_heartbeat_interval_seconds: int = 30
+
+    secret_key: str = "watershed-development-secret-key-change-in-production"
+    session_cookie_name: str = "watershed_session"
+    session_expire_seconds: int = 86400  # 24 hours
+    session_cookie_secure: bool = False
+    session_cookie_samesite: str = "lax"
+    auth_required: bool = True
 
     model_config = SettingsConfigDict(
         env_file=".env",

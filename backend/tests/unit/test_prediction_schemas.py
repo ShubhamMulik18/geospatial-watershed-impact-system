@@ -23,6 +23,7 @@ def test_prediction_response_matches_contract():
         "confidence": 0.92,
         "requires_verification": False,
         "model_version": "intervention-mobilenetv2-v1",
+        "warnings": [],
     }
 
 

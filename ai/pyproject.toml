@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "watershed-ai"
+version = "0.1.0.dev1"
+description = "CPU inference for the watershed development image classifier"
+readme = "inference/README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "torch>=2.14.0,<2.15",
+    "torchvision>=0.29.0,<0.30",
+    "Pillow>=12.3.0,<13",
+]
+
+[tool.setuptools]
+# Preserve the existing ai.inference namespace. Do not discover other folders.
+packages = ["ai.inference"]
+package-dir = {"ai.inference" = "inference"}
+include-package-data = false

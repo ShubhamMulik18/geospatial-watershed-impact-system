@@ -3,14 +3,17 @@ import json
 from fastapi import APIRouter, Depends, File, Form, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.core.exceptions import AppError
 from app.db.session import get_db
+from app.models.user import User
 from app.schemas.dataset import DatasetResponse
 from app.services.dataset_response import build_dataset_response
 from app.services.dataset_service import DatasetService
 
 
 router = APIRouter(prefix="/datasets", tags=["datasets"])
+
 
 @router.get(
     "",
@@ -20,6 +23,7 @@ router = APIRouter(prefix="/datasets", tags=["datasets"])
 def list_datasets(
     capability: str | None = None,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> list[DatasetResponse]:
     datasets = DatasetService(db=db).list_datasets(
         capability=capability,
@@ -29,6 +33,7 @@ def list_datasets(
         build_dataset_response(dataset)
         for dataset in datasets
     ]
+
 
 @router.post(
     "/upload",
@@ -40,6 +45,7 @@ async def upload_dataset(
     display_name: str = Form(...),
     metadata_json: str = Form(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> DatasetResponse:
     try:
         metadata = json.loads(metadata_json)

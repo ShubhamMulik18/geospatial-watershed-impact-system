@@ -31,6 +31,11 @@ class PredictionService:
             raise NotFoundError("Photo not found.")
 
         photo_path = Path(photo.safe_path)
+        if not photo_path.is_absolute() and not photo_path.is_file():
+            repo_root = Path(__file__).resolve().parents[3]
+            if (repo_root / photo_path).is_file():
+                photo_path = repo_root / photo_path
+
         if not photo_path.is_file():
             raise AppError(
                 "Stored photo file is unavailable.",
@@ -38,7 +43,14 @@ class PredictionService:
                 code="PHOTO_FILE_UNAVAILABLE",
             )
 
-        result = self.ai_adapter.predict(photo_path)
+        try:
+            result = self.ai_adapter.predict(photo_path)
+        except Exception as exc:
+            raise AppError(
+                f"AI model inference failed: {exc}",
+                status_code=422 if isinstance(exc, ValueError) else 500,
+                code="PREDICTION_INFERENCE_ERROR",
+            ) from exc
 
         prediction = Prediction(
             photo_id=photo.id,
@@ -52,6 +64,7 @@ class PredictionService:
             review_flag=result.requires_verification,
         )
 
+        prediction.warnings = list(getattr(result, "warnings", []) or [])
         self.db.add(prediction)
         self.db.flush()
 

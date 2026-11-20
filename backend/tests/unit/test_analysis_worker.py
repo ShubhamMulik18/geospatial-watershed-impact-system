@@ -240,3 +240,96 @@ def test_progress_callback_renews_lease_after_heartbeat_interval(
 
     callback("processing")
     assert renew_calls == [analysis]
+
+
+
+def test_worker_with_production_geospatial_adapter(tmp_path: Path) -> None:
+    import numpy as np
+    import rasterio
+    from rasterio.transform import from_origin
+    from app.integrations.geospatial.production_adapter import (
+        ProductionGeospatialAdapter,
+    )
+
+    raster_path = tmp_path / "worker_test.tif"
+    raster_data = np.zeros((5, 4, 4), dtype=np.float32)
+    raster_data[2] = 0.6  # Band 3
+    raster_data[3] = 0.2  # Band 4
+    raster_data[4] = 0.8  # Band 5
+
+    with rasterio.open(
+        raster_path,
+        "w",
+        driver="GTiff",
+        height=4,
+        width=4,
+        count=5,
+        dtype="float32",
+        crs="EPSG:4326",
+        transform=from_origin(74.0, 17.0, 0.001, 0.001),
+        nodata=-9999.0,
+    ) as dst:
+        dst.write(raster_data)
+
+    dataset_link = MagicMock()
+    dataset_link.dataset = None
+    dataset_link.dataset_id = "ds-real-001"
+    dataset_link.sequence = 0
+    dataset_link.dataset_metadata_snapshot = {
+        "path": str(raster_path),
+        "acquisition_date": "2020-01-15",
+        "manifest": {
+            "bands": {"red": 4, "nir": 5, "green": 3},
+            "band_scaling": {
+                "red": {"scale": 1.0, "offset": 0.0},
+                "nir": {"scale": 1.0, "offset": 0.0},
+                "green": {"scale": 1.0, "offset": 0.0},
+            },
+        },
+    }
+    dataset_link.dataset_sha256 = "abc123hash"
+
+    analysis = MagicMock()
+    analysis.id = "worker-prod-001"
+    analysis.status = "queued"
+    analysis.error = None
+    analysis.polygon = {
+        "type": "Polygon",
+        "coordinates": [[
+            [74.000, 16.996],
+            [74.004, 16.996],
+            [74.004, 17.000],
+            [74.000, 17.000],
+            [74.000, 16.996],
+        ]],
+    }
+    analysis.indicators = ["ndvi"]
+    analysis.dataset_links = [dataset_link]
+    analysis.result = None
+    analysis.warnings = []
+
+    db = MagicMock()
+    repository = MagicMock()
+    worker = AnalysisWorker(
+        db=db,
+        repository=repository,
+        geospatial_adapter=ProductionGeospatialAdapter(),
+    )
+
+    worker.process_job(analysis)
+
+    assert analysis.status == "completed"
+    assert analysis.error is None
+    assert analysis.result is not None
+    assert "mean_ndvi" in analysis.result.result["metrics"]
+    db.commit.assert_called()
+
+    from app.models.artifact import Artifact
+    added_artifacts = [
+        call.args[0]
+        for call in db.add.call_args_list
+        if isinstance(call.args[0], Artifact)
+    ]
+    assert len(added_artifacts) >= 1
+    assert added_artifacts[0].kind == "ndvi_raster"
+    assert "ds-real-001_ndvi.tif" in added_artifacts[0].safe_relative_path

@@ -13,6 +13,8 @@ EXPECTED_TABLES = {
     "analysis_results",
     "analysis_warnings",
     "artifacts",
+    "users",
+    "user_sessions",
 }
 
 

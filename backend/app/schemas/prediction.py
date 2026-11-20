@@ -13,3 +13,4 @@ class PredictionResponse(SchemaBase):
     confidence: Confidence
     requires_verification: bool
     model_version: str = Field(min_length=1)
+    warnings: list[str] = Field(default_factory=list)

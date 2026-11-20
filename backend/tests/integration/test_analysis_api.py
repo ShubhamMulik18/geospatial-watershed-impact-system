@@ -15,6 +15,14 @@ from app.models.prediction import Prediction
 
 client = TestClient(app)
 
+import pytest
+from unittest.mock import patch
+
+@pytest.fixture(autouse=True)
+def mock_run_worker_job():
+    with patch('app.api.routes.analyses._run_worker_job'):
+        yield
+
 
 def _make_photo() -> Photo:
     return Photo(

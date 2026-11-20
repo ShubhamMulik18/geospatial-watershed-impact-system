@@ -25,6 +25,16 @@ class Indicator(StrEnum):
     NDVI = "ndvi"
     WATER = "water"
 
+    @classmethod
+    def _missing_(cls, value: object):
+        if isinstance(value, str):
+            val_lower = value.lower().replace("-", "_").strip()
+            if val_lower in ("vegetation", "vegetation_change", "ndvi"):
+                return cls.NDVI
+            if val_lower in ("surface_water", "water", "mndwi", "ndwi"):
+                return cls.WATER
+        return None
+
 class AnalysisMetrics(SchemaBase):
     """Computed environmental metrics for an analysis."""
 
@@ -36,6 +46,9 @@ class AnalysisMetrics(SchemaBase):
     water_after_hectares: float | None = None
     water_change_hectares: float | None = None
     water_change_percent: float | None = None
+
+    mean_ndvi: float | None = None
+    mean_mndwi: float | None = None
 
 class AnalysisSeriesPoint(SchemaBase):
     """One chronological dataset measurement in an analysis."""

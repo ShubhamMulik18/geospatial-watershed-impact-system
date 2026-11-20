@@ -55,7 +55,7 @@ def test_upload_photo_returns_canonical_response(tmp_path) -> None:
                 },
             )
     finally:
-        app.dependency_overrides.clear()
+        app.dependency_overrides.pop(get_db, None)
 
     assert response.status_code == 201
 
@@ -95,7 +95,7 @@ def test_upload_photo_rejects_unsupported_type() -> None:
             },
         )
     finally:
-        app.dependency_overrides.clear()
+        app.dependency_overrides.pop(get_db, None)
 
     assert response.status_code == 400
     assert response.json()["error"]["message"] == "Unsupported photo type."
@@ -118,7 +118,7 @@ def test_upload_photo_rejects_oversized_file() -> None:
             },
         )
     finally:
-        app.dependency_overrides.clear()
+        app.dependency_overrides.pop(get_db, None)
 
     assert response.status_code == 400
     assert (
@@ -142,7 +142,7 @@ def test_upload_photo_rejects_corrupt_image() -> None:
             },
         )
     finally:
-        app.dependency_overrides.clear()
+        app.dependency_overrides.pop(get_db, None)
 
     assert response.status_code == 400
     assert (
@@ -192,7 +192,7 @@ def test_upload_photo_returns_exif_gps_and_capture_date(tmp_path) -> None:
                 },
             )
     finally:
-        app.dependency_overrides.clear()
+        app.dependency_overrides.pop(get_db, None)
 
     assert response.status_code == 201
 
@@ -248,7 +248,7 @@ def test_create_prediction_returns_canonical_response() -> None:
                 f"/api/photos/{photo_id}/prediction",
             )
     finally:
-        app.dependency_overrides.clear()
+        app.dependency_overrides.pop(get_db, None)
 
     assert response.status_code == 201
 
@@ -262,6 +262,7 @@ def test_create_prediction_returns_canonical_response() -> None:
         "confidence",
         "requires_verification",
         "model_version",
+        "warnings",
     }
 
     assert data["prediction_id"] == str(prediction.id)

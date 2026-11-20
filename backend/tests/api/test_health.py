@@ -13,6 +13,25 @@ def test_health_endpoint() -> None:
     assert response.json() == {"status": "ok"}
 
 
+def test_root_endpoint_returns_online_status() -> None:
+    response = client.get("/")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "online"
+    assert "Geospatial Watershed Impact Analysis System" in data["message"]
+    assert data["version"] == "0.1.0"
+    assert data["docs_url"] == "/docs"
+    assert data["health_url"] == "/api/health"
+
+
+def test_health_root_alias() -> None:
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
 def test_openapi_metadata() -> None:
     response = client.get("/openapi.json")
 

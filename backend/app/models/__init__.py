@@ -6,6 +6,8 @@ from app.models.artifact import Artifact
 from app.models.dataset import Dataset
 from app.models.photo import Photo
 from app.models.prediction import Prediction
+from app.models.user import User
+from app.models.user_session import UserSession
 
 __all__ = [
     "Analysis",
@@ -16,4 +18,6 @@ __all__ = [
     "Dataset",
     "Photo",
     "Prediction",
+    "User",
+    "UserSession",
 ]

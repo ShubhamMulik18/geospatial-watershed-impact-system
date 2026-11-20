@@ -1,0 +1,2 @@
+"""Geospatial environmental indices module."""
+
